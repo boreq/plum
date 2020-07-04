@@ -33,18 +33,39 @@ files in order to present historical data points.
     my.access.log.2.gz
     my.access.log.3.gz
     my.access.log.4.gz
+    
+You can use the following command to generate a default config file:
 
-In this case the program will load the current access log as well as the older
-logs:
+    $ plum default_config > config.json
 
-    $ plum run my.access.log my.access.log.*
+Based on that prepare a config which will load the current access log as well
+as the older logs:
+
+    $ cat config.json
+    {
+        "serveAddress": "127.0.0.1:8118",
+        "websites": [
+            {
+                "name": "example.com",
+                "follow": "/path/to/example.access.log",
+                "load": [
+                    "/path/to/example.access.log.*"
+                ],
+                "logFormat": "combined"
+            }
+        ]
+    }
+    
+Execute the program:
+    
+    $ plum run config.json
     INFO starting listening                       source=server address=127.0.0.1:8118
 
 Navigate to http://127.0.0.0:8118 to see the results.
 
 ## Configuration
 
-### `--log-format`
+### `websites.logFormat`
 
 Specifies the log format. A custom or a predefined format can be used.
 
@@ -58,10 +79,3 @@ option.
 #### Custom formats
 When using a custom format a number of elements can be used to construct it, check out [parser.go](https://github.com/boreq/plum/blob/master/parser/parser.go).
 
-Default: `combined`
-
-## `--address`
-
-Address of the dashboard.
-
-Default: `127.0.0.1:8118`
