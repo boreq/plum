@@ -11,6 +11,7 @@ var MainCmd = guinea.Command{
 	Run: runMain,
 	Subcommands: map[string]*guinea.Command{
 		"run": &runCmd,
+		"default_config": &defaultConfigCmd,
 	},
 	ShortDescription: "a real-time access log analyser",
 	Description: `
