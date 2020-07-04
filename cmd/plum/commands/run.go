@@ -1,6 +1,10 @@
 package commands
 
 import (
+	"encoding/json"
+	"github.com/pkg/errors"
+	"os"
+	"path/filepath"
 	"runtime"
 	"time"
 
@@ -16,67 +20,67 @@ var runCmd = guinea.Command{
 	Run: runRun,
 	Arguments: []guinea.Argument{
 		{
-			Name:        "follow",
+			Name:        "config",
 			Optional:    false,
 			Multiple:    false,
-			Description: "Log file to be monitored",
-		},
-		{
-			Name:        "load",
-			Optional:    true,
-			Multiple:    true,
-			Description: "Log files to be initially loaded",
-		},
-	},
-	Options: []guinea.Option{
-		guinea.Option{
-			Name:        "address",
-			Type:        guinea.String,
-			Description: "Serve address",
-			Default:     config.Default().ServeAddress,
-		},
-		guinea.Option{
-			Name:        "log-format",
-			Type:        guinea.String,
-			Description: "Log format",
-			Default:     config.Default().LogFormat,
+			Description: "Config file to be used",
 		},
 	},
 	ShortDescription: "loads and follows log files",
 }
 
 func runRun(c guinea.Context) error {
-	conf := config.Default()
-	conf.ServeAddress = c.Options["address"].Str()
-	conf.LogFormat = c.Options["log-format"].Str()
-
-	p, err := parser.NewParser(getLogFormat(conf.LogFormat))
+	conf, err := loadConfig(c.Arguments[0])
 	if err != nil {
-		return err
+		return errors.Wrap(err, "could not load the configuration")
 	}
 
-	r := core.NewRepository(conf)
-
-	tracker := core.NewTracker(p, r)
 	errC := make(chan error)
 
-	// Statistics
-	go printStats(tracker)
+	repositories := core.NewRepositories()
 
-	// Load the specified files
-	for i := 1; i < len(c.Arguments); i++ {
-		if err := tracker.Load(c.Arguments[i]); err != nil {
+	go logMemoryStats()
+
+	for i := range conf.Websites {
+		website := conf.Websites[i]
+
+		p, err := parser.NewParser(getLogFormat(website.LogFormat))
+		if err != nil {
 			return err
+		}
+
+		r := core.NewRepository(website)
+
+		tracker := core.NewTracker(p, r)
+
+		go printStats(website.Name, tracker)
+
+		// Load the specified files
+		for _, glob := range website.Load {
+			paths, err := filepath.Glob(glob)
+			if err != nil {
+				return errors.Wrapf(err,  "could not process a glob pattern '%s", glob)
+			}
+
+			for _, path := range paths {
+				if err := tracker.Load(path); err != nil {
+					return err
+				}
+			}
+		}
+
+		// Track the specified file
+		go func() {
+			errC <- tracker.Follow(website.Follow)
+		}()
+
+		if err := repositories.Add(website.Name, r); err != nil {
+			return errors.Wrap(err, "could not add a repository")
 		}
 	}
 
-	// Track the specified file
 	go func() {
-		errC <- tracker.Follow(c.Arguments[0])
-	}()
-
-	go func() {
-		errC <- server.Serve(tracker.Repository, conf.ServeAddress)
+		errC <- server.Serve(repositories, conf.ServeAddress)
 	}()
 
 	return <-errC
@@ -93,25 +97,46 @@ func getLogFormat(format string) string {
 	return format
 }
 
-func printStats(tracker *core.Tracker) {
+func printStats(websiteName string, tracker *core.Tracker) {
 	lastLines, _ := tracker.GetStats()
-	duration := 1 * time.Second
+	duration := 5 * time.Second
 	for range time.Tick(duration) {
 		lines, _ := tracker.GetStats()
 		linesPerSecond := float64(lines-lastLines) / duration.Seconds()
-		log.Debug("data statistics", "totalLines", lines, "linesPerSecond", linesPerSecond)
+		log.Debug("data statistics", "totalLines", lines, "linesPerSecond", linesPerSecond, "website", websiteName)
 		lastLines = lines
-		logMemoryStats()
 	}
 }
 
 func logMemoryStats() {
-	var m runtime.MemStats
-	runtime.ReadMemStats(&m)
-	alloc := humanize.Bytes(m.Alloc)
-	totalAlloc := humanize.Bytes(m.TotalAlloc)
-	sys := humanize.Bytes(m.Sys)
-	numGC := m.NumGC
+	duration := 10 * time.Second
+	for range time.Tick(duration) {
+		var m runtime.MemStats
+		runtime.ReadMemStats(&m)
+		alloc := humanize.Bytes(m.Alloc)
+		totalAlloc := humanize.Bytes(m.TotalAlloc)
+		sys := humanize.Bytes(m.Sys)
+		numGC := m.NumGC
 
-	log.Debug("memory statistics", "alloc", alloc, "totalAlloc", totalAlloc, "sys", sys, "numGC", numGC)
+		log.Debug("memory statistics", "alloc", alloc, "totalAlloc", totalAlloc, "sys", sys, "numGC", numGC)
+	}
+}
+
+func loadConfig(path string) (*config.Config, error) {
+	conf := config.Default()
+
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not open the config file")
+	}
+
+	if err := json.NewDecoder(f).Decode(&conf); err != nil {
+		return nil, errors.Wrap(err, "could not unmarshal the config")
+	}
+
+	if err := conf.Valid(); err != nil {
+		return nil, errors.Wrap(err, "invalid config")
+	}
+
+	return conf, nil
 }

@@ -17,20 +17,20 @@ const entryKeyFormat = "2006-01-02 15"
 // identical visits from different days from getting merged.
 const visitPrefixFormat = "2006-01-02"
 
-func NewRepository(conf *config.Config) *Repository {
+type Repository struct {
+	data      map[string]*Data
+	dataMutex sync.Mutex
+	conf      config.Website
+	log       logging.Logger
+}
+
+func NewRepository(conf config.Website) *Repository {
 	rv := &Repository{
 		data: make(map[string]*Data),
 		log:  logging.New("repository"),
 		conf: conf,
 	}
 	return rv
-}
-
-type Repository struct {
-	data      map[string]*Data
-	dataMutex sync.Mutex
-	conf      *config.Config
-	log       logging.Logger
 }
 
 func (r *Repository) Insert(entry *parser.Entry) error {

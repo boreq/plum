@@ -19,7 +19,11 @@ import (
 var log = logging.New("server")
 
 type handler struct {
-	repository *core.Repository
+	repositories *core.Repositories
+}
+
+func (h *handler) Website(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+	return h.repositories.Names(), nil
 }
 
 func (h *handler) Hour(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
@@ -47,7 +51,13 @@ func (h *handler) Hour(r *http.Request, ps httprouter.Params) (interface{}, api.
 		return nil, api.BadRequest
 	}
 
-	data, ok := h.repository.RetrieveHour(year, time.Month(month), day, hour)
+	name := ps.ByName("name")
+	repository, ok := h.repositories.Get(name)
+	if !ok {
+		return nil, api.BadRequest
+	}
+
+	data, ok := repository.RetrieveHour(year, time.Month(month), day, hour)
 	if !ok {
 		return nil, api.NotFound
 	}
@@ -78,7 +88,13 @@ func (h *handler) Day(r *http.Request, ps httprouter.Params) (interface{}, api.E
 		return nil, api.BadRequest
 	}
 
-	data, ok := h.repository.RetrieveDay(year, time.Month(month), day)
+	name := ps.ByName("name")
+	repository, ok := h.repositories.Get(name)
+	if !ok {
+		return nil, api.BadRequest
+	}
+
+	data, ok := repository.RetrieveDay(year, time.Month(month), day)
 	if !ok {
 		return nil, api.NotFound
 	}
@@ -104,7 +120,13 @@ func (h *handler) Month(r *http.Request, ps httprouter.Params) (interface{}, api
 		return nil, api.BadRequest
 	}
 
-	data, ok := h.repository.RetrieveMonth(year, time.Month(month))
+	name := ps.ByName("name")
+	repository, ok := h.repositories.Get(name)
+	if !ok {
+		return nil, api.BadRequest
+	}
+
+	data, ok := repository.RetrieveMonth(year, time.Month(month))
 	if !ok {
 		return nil, api.NotFound
 	}
@@ -163,9 +185,15 @@ func (h *handler) RangeHourly(r *http.Request, ps httprouter.Params) (interface{
 	from := time.Date(yearFrom, time.Month(monthFrom), dayFrom, hourFrom, 0, 0, 0, time.UTC)
 	to := time.Date(yearTo, time.Month(monthTo), dayTo, hourTo, 0, 0, 0, time.UTC)
 
+	name := ps.ByName("name")
+	repository, ok := h.repositories.Get(name)
+	if !ok {
+		return nil, api.BadRequest
+	}
+
 	var response []RangeData
 	for t := from; !t.After(to); t = t.Add(time.Hour) {
-		data, ok := h.repository.RetrieveHour(t.Year(), t.Month(), t.Day(), t.Hour())
+		data, ok := repository.RetrieveHour(t.Year(), t.Month(), t.Day(), t.Hour())
 		if !ok {
 			return nil, api.InternalServerError
 		}
@@ -217,9 +245,15 @@ func (h *handler) RangeDaily(r *http.Request, ps httprouter.Params) (interface{}
 	from := time.Date(yearFrom, time.Month(monthFrom), dayFrom, 0, 0, 0, 0, time.UTC)
 	to := time.Date(yearTo, time.Month(monthTo), dayTo, 0, 0, 0, 0, time.UTC)
 
+	name := ps.ByName("name")
+	repository, ok := h.repositories.Get(name)
+	if !ok {
+		return nil, api.BadRequest
+	}
+
 	var response []RangeData
 	for t := from; !t.After(to); t = t.AddDate(0, 0, 1) {
-		data, ok := h.repository.RetrieveDay(t.Year(), t.Month(), t.Day())
+		data, ok := repository.RetrieveDay(t.Year(), t.Month(), t.Day())
 		if !ok {
 			return nil, api.InternalServerError
 		}
@@ -261,9 +295,15 @@ func (h *handler) RangeMonthly(r *http.Request, ps httprouter.Params) (interface
 	from := time.Date(yearFrom, time.Month(monthFrom), 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(yearTo, time.Month(monthTo), 1, 0, 0, 0, 0, time.UTC)
 
+	name := ps.ByName("name")
+	repository, ok := h.repositories.Get(name)
+	if !ok {
+		return nil, api.BadRequest
+	}
+
 	var response []RangeData
 	for t := from; !t.After(to); t = t.AddDate(0, 1, 0) {
-		data, ok := h.repository.RetrieveMonth(t.Year(), t.Month())
+		data, ok := repository.RetrieveMonth(t.Year(), t.Month())
 		if !ok {
 			return nil, api.InternalServerError
 		}
@@ -290,8 +330,8 @@ type RangeData struct {
 	Data *core.Data `json:"data"`
 }
 
-func Serve(repository *core.Repository, address string) error {
-	handler, err := newHandler(repository)
+func Serve(repositories *core.Repositories, address string) error {
+	handler, err := newHandler(repositories)
 	if err != nil {
 		return err
 	}
@@ -306,9 +346,9 @@ func Serve(repository *core.Repository, address string) error {
 	return http.ListenAndServe(address, handler)
 }
 
-func newHandler(repository *core.Repository) (http.Handler, error) {
+func newHandler(repositories *core.Repositories) (http.Handler, error) {
 	h := &handler{
-		repository: repository,
+		repositories: repositories,
 	}
 
 	statikFS, err := fs.New()
@@ -318,15 +358,18 @@ func newHandler(repository *core.Repository) (http.Handler, error) {
 
 	router := httprouter.New()
 
+	// List websites
+	router.GET("/api/websites", api.Wrap(h.Website))
+
 	// Discrete endpoints
-	router.GET("/api/hour/:year/:month/:day/:hour", api.Wrap(h.Hour))
-	router.GET("/api/day/:year/:month/:day", api.Wrap(h.Day))
-	router.GET("/api/month/:year/:month", api.Wrap(h.Month))
+	router.GET("/api/websites/:name/hour/:year/:month/:day/:hour", api.Wrap(h.Hour))
+	router.GET("/api/websites/:name/day/:year/:month/:day", api.Wrap(h.Day))
+	router.GET("/api/websites/:name/month/:year/:month", api.Wrap(h.Month))
 
 	// Range endpoints
-	router.GET("/api/range/hourly/:yearFrom/:monthFrom/:dayFrom/:hourFrom/:yearTo/:monthTo/:dayTo/:hourTo", api.Wrap(h.RangeHourly))
-	router.GET("/api/range/daily/:yearFrom/:monthFrom/:dayFrom/:yearTo/:monthTo/:dayTo", api.Wrap(h.RangeDaily))
-	router.GET("/api/range/monthly/:yearFrom/:monthFrom/:yearTo/:monthTo", api.Wrap(h.RangeMonthly))
+	router.GET("/api/websites/:name/range/hourly/:yearFrom/:monthFrom/:dayFrom/:hourFrom/:yearTo/:monthTo/:dayTo/:hourTo", api.Wrap(h.RangeHourly))
+	router.GET("/api/websites/:name/range/daily/:yearFrom/:monthFrom/:dayFrom/:yearTo/:monthTo/:dayTo", api.Wrap(h.RangeDaily))
+	router.GET("/api/websites/:name/range/monthly/:yearFrom/:monthFrom/:yearTo/:monthTo", api.Wrap(h.RangeMonthly))
 
 	// Frontend
 	router.NotFound = http.FileServer(statikFS)

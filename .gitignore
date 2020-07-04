@@ -1,4 +1,5 @@
 build/
 _*
 cmd/plum/plum
+config.json
 .idea
