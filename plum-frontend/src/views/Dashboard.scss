@@ -1,0 +1,148 @@
+$spacing: 10px;
+
+.grid {
+    display: grid;
+    grid-template-columns: 250px 1fr 1fr;
+    grid-template-rows: auto auto auto auto auto auto;
+    grid-column-gap: $spacing;
+    grid-row-gap: $spacing;
+    grid-template-areas:
+        "summary hits-and-visits hits-and-visits"
+        "summary pages referers"
+        "summary bytes-sent-chart bytes-sent-chart"
+        "summary bytes-sent bytes-sent"
+        "summary status-codes-chart status-codes-chart"
+        "summary status-codes status-codes";
+
+    >* {
+        overflow: auto;
+    }
+
+    .summary {
+        grid-area: summary;
+    }
+
+    .hits-and-visits {
+        grid-area: hits-and-visits;
+    }
+
+    .pages {
+        grid-area: pages;
+    }
+
+    .referers {
+        grid-area: referers;
+    }
+
+    .bytes-sent-chart {
+        grid-area: bytes-sent-chart;
+    }
+
+    .bytes-sent {
+        grid-area: bytes-sent;
+    }
+
+    .status-codes-chart {
+        grid-area: status-codes-chart;
+    }
+
+    .status-codes {
+        grid-area: status-codes;
+    }
+
+    .box.box-inversed {
+        background-color: $box-inversed-background-color;
+    }
+
+    .box.box-normal {
+        background-color: $box-normal-background-color;
+    }
+}
+
+.parameters {
+    display: flex;
+    flex-direction: row;
+    font-size: 10px;
+
+    .box {
+        margin: $spacing $spacing $spacing 0;
+        padding: .5em 1em;
+
+        ul {
+            margin: 0;
+            padding: 0;
+            list-style-type: none;
+
+            li {
+                margin: 0;
+                padding: 0 5px 0 0;
+                display: inline-block;
+            }
+
+            li:last-child {
+                padding: 0;
+            }
+        }
+
+        a {
+            cursor: pointer;
+        }
+
+        a:hover {
+            color: $primary-color;
+        }
+
+        a.active {
+            color: $primary-color;
+        }
+    }
+
+    .box.box-dimmed {
+        background-color: $box-dimmed-background-color;
+        color: $box-dimmed-text-color;
+    }
+}
+
+.box {
+    padding: 2em 1em;
+    border-radius: 5px;
+}
+
+.box.box-normal, .box.box-inversed {
+    box-shadow: 0 0 5px rgba(34, 34, 34, .10);
+}
+
+.updating {
+    opacity: 0.5;
+}
+
+@media (max-width: $media-threshold-1) {
+    .grid {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto auto auto auto auto auto;
+        grid-template-areas:
+            "summary summary"
+            "hits-and-visits hits-and-visits"
+            "pages referers"
+            "bytes-sent-chart bytes-sent-chart"
+            "bytes-sent bytes-sent"
+            "status-codes-chart status-codes-chart"
+            "status-codes status-codes";
+    }
+}
+
+@media (max-width: $media-threshold-2) {
+    .grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto auto auto auto auto auto;
+        grid-template-areas:
+            "summary"
+            "hits-and-visits"
+            "pages"
+            "referers"
+            "bytes-sent-chart"
+            "bytes-sent"
+            "status-codes-chart"
+            "status-codes";
+    }
+}
