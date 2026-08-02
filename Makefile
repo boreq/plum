@@ -11,10 +11,6 @@ build-race:
 frontend:
 	./_tools/build_frontend.sh
 
-doc:
-	@echo "http://localhost:6060/pkg/github.com/boreq/plum/"
-	godoc -http=:6060
-
 test:
 	go test ./...
 
@@ -24,4 +20,4 @@ test-verbose:
 clean:
 	rm -rf ./build
 
-.PHONY: all build frontend build-race doc test test-verbose clean
+.PHONY: all build frontend build-race test test-verbose clean
