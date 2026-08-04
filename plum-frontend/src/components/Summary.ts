@@ -1,9 +1,9 @@
 import { defineComponent, type PropType } from 'vue';
 import type { RangeData } from '@/dto/Data';
-import { DataService } from '@/services/DataService';
+import { MetricsService } from '@/services/MetricsService';
 import { TextService } from '@/services/TextService';
 
-const dataService = new DataService();
+const metricsService = new MetricsService();
 const textService = new TextService();
 
 export default defineComponent({
@@ -18,24 +18,15 @@ export default defineComponent({
 
     computed: {
         hits(): string {
-            const sum = this.data.reduce((acc, v) => {
-                return acc + dataService.getHits(v.data);
-            }, 0);
-            return textService.humanizeNumber(sum);
+            return textService.humanizeNumber(metricsService.total(this.data, v => v.hits));
         },
 
         visits(): string {
-            const sum = this.data.reduce((acc, v) => {
-                return acc + dataService.getVisits(v.data);
-            }, 0);
-            return textService.humanizeNumber(sum);
+            return textService.humanizeNumber(metricsService.total(this.data, v => v.visits));
         },
 
         bytesSent(): string {
-            const sum = this.data.reduce((acc, v) => {
-                return acc + dataService.getBytesSent(v.data);
-            }, 0);
-            return textService.humanizeBytes(sum, 0);
+            return textService.humanizeBytes(metricsService.total(this.data, v => v.bytes), 0);
         },
     },
 });

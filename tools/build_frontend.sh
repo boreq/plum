@@ -1,13 +1,15 @@
 #!/bin/bash
 set -e
 
+cd "$(dirname "$0")/.."
+
 # Build frontend
 echo "Running yarn build"
-cd ../plum-frontend
+cd plum-frontend
 rm -rf dist
-yarn build
+corepack yarn build
 
 # Build backend
-cd ../plum
+cd ..
 echo "Running https://github.com/rakyll/statik"
-statik -f -src=../plum-frontend/dist
+go run github.com/rakyll/statik -f -src=./plum-frontend/dist

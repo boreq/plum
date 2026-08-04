@@ -48,48 +48,48 @@ func (r *Repository) Insert(entry *parser.Entry) error {
 	return data.Insert(entry)
 }
 
-func (r *Repository) RetrieveHour(year int, month time.Month, day int, hour int) (*Data, bool) {
+func (r *Repository) RetrieveHour(year int, month time.Month, day int, hour int, filter Filter) (*Summary, bool) {
 	r.dataMutex.Lock()
 	defer r.dataMutex.Unlock()
 
-	target := NewData()
+	target := NewSummary()
 
 	t := time.Date(year, month, day, hour, 0, 0, 0, time.UTC)
 	key := r.createKey(t)
 	if d, ok := r.data[key]; ok {
 		visitPrefix := t.Format(visitPrefixFormat)
-		mergeData(target, d, visitPrefix)
+		mergeData(target, d, visitPrefix, filter)
 	}
 	return target, true
 }
 
-func (r *Repository) RetrieveDay(year int, month time.Month, day int) (*Data, bool) {
+func (r *Repository) RetrieveDay(year int, month time.Month, day int, filter Filter) (*Summary, bool) {
 	r.dataMutex.Lock()
 	defer r.dataMutex.Unlock()
 
-	target := NewData()
+	target := NewSummary()
 
 	for _, t := range iterateDay(year, month, day) {
 		key := r.createKey(t)
 		if d, ok := r.data[key]; ok {
 			visitPrefix := t.Format(visitPrefixFormat)
-			mergeData(target, d, visitPrefix)
+			mergeData(target, d, visitPrefix, filter)
 		}
 	}
 	return target, true
 }
 
-func (r *Repository) RetrieveMonth(year int, month time.Month) (*Data, bool) {
+func (r *Repository) RetrieveMonth(year int, month time.Month, filter Filter) (*Summary, bool) {
 	r.dataMutex.Lock()
 	defer r.dataMutex.Unlock()
 
-	target := NewData()
+	target := NewSummary()
 
 	for _, t := range iterateMonth(year, month) {
 		key := r.createKey(t)
 		if d, ok := r.data[key]; ok {
 			visitPrefix := t.Format(visitPrefixFormat)
-			mergeData(target, d, visitPrefix)
+			mergeData(target, d, visitPrefix, filter)
 		}
 	}
 	return target, true
@@ -142,32 +142,24 @@ func iterateMonth(year int, month time.Month) []time.Time {
 	return result
 }
 
-func mergeData(target *Data, source *Data, visitPrefix string) {
-	// Copy visits
-	for visit := range source.Visits {
-		target.InsertVisit(visitPrefix + visit)
-	}
+func mergeData(target *Summary, source *Data, visitPrefix string, filter Filter) {
+	for uri, uriData := range source.Uris {
+		if !filter.MatchesUri(uri) {
+			continue
+		}
 
-	// Group referers
-	for sourceReferer, sourceRefererData := range source.Referers {
-		targetRefererData := target.GetOrCreateRefererData(sourceReferer)
-		targetRefererData.InsertHits(sourceRefererData.Hits)
-		for visit := range sourceRefererData.Visits {
-			targetRefererData.InsertVisit(visitPrefix + visit)
+		for status, statusData := range uriData.Statuses {
+			if !filter.MatchesStatus(status) {
+				continue
+			}
+
+			for referer, refererData := range statusData.Referers {
+				if !filter.MatchesReferer(referer) {
+					continue
+				}
+
+				target.InsertLeaf(uri, status, referer, refererData.Metrics, visitPrefix)
+			}
 		}
 	}
-
-	// Group URIs
-	for sourceUri, sourceUriData := range source.Uris {
-		targetUriData := target.GetOrCreateUriData(sourceUri)
-		for visit := range sourceUriData.Visits {
-			targetUriData.InsertVisit(visitPrefix + visit)
-		}
-		targetUriData.AddBodyBytesSent(sourceUriData.BodyBytesSent)
-		for sourceStatus, sourceStatusData := range sourceUriData.Statuses {
-			targetStatusData := targetUriData.GetOrCreateStatusData(sourceStatus)
-			targetStatusData.InsertHits(sourceStatusData.Hits)
-		}
-	}
-
 }

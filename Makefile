@@ -9,7 +9,7 @@ build-race:
 	go build -race -o ./build/plum ./cmd/plum
 
 frontend:
-	./_tools/build_frontend.sh
+	./tools/build_frontend.sh
 
 test:
 	go test ./...

@@ -1,7 +1,6 @@
 import { defineComponent, markRaw, type PropType } from 'vue';
 import type { RangeData } from '@/dto/Data';
 import { ChartColors } from '@/dto/ChartColors';
-import { DataService } from '@/services/DataService';
 import { TextService } from '@/services/TextService';
 import { GroupingType } from '@/dto/GroupingType';
 import { ChartAnimation } from '@/dto/ChartAnimation';
@@ -16,7 +15,6 @@ class ChartData {
 type BarChart = Chart<'bar', number[], string>;
 
 const textService = new TextService();
-const dataService = new DataService();
 
 export default defineComponent({
     name: 'HitsAndVisits',
@@ -67,8 +65,8 @@ export default defineComponent({
                 .map(rangeData => {
                     return {
                         label: textService.formatDate(rangeData.time, this.groupingType),
-                        hits: dataService.getHits(rangeData.data),
-                        visits: dataService.getVisits(rangeData.data),
+                        hits: rangeData.data.hits,
+                        visits: rangeData.data.visits,
                     };
                 });
             this.drawChart(chartData);
@@ -88,7 +86,6 @@ export default defineComponent({
                 this.chart.data.labels.push(label);
             }
 
-            // Update with zeroes
             this.chart.data.datasets[0].data.length = visits.length;
             visits.forEach((value, index) => {
                 if (!this.chart.data.datasets[0].data[index]) {
@@ -105,7 +102,6 @@ export default defineComponent({
 
             this.chart.update('none');
 
-            // Update with real values and animate
             visits.forEach((value, index) => {
                 this.chart.data.datasets[0].data[index] = value;
             });

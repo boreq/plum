@@ -2,7 +2,6 @@
 node_modules
 /dist
 
-# Yarn (node-modules linker, global cache)
 .yarn/*
 !.yarn/patches
 !.yarn/plugins

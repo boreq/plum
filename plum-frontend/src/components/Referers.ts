@@ -1,15 +1,12 @@
 import { defineComponent, type PropType } from 'vue';
 import type { RangeData } from '@/dto/Data';
 import { Align, type TableHeader, type TableRow } from '@/dto/Table';
+import { FilterDimension } from '@/dto/Filter';
+import { MetricsService, type NamedMetrics } from '@/services/MetricsService';
 import { TextService } from '@/services/TextService';
 import Table from '@/components/Table.vue';
 
-class RefererData {
-    referer: string;
-    visits: number;
-    hits: number;
-}
-
+const metricsService = new MetricsService();
 const textService = new TextService();
 
 export default defineComponent({
@@ -25,6 +22,8 @@ export default defineComponent({
             default: () => [],
         },
     },
+
+    emits: ['filter'],
 
     computed: {
         header(): TableHeader {
@@ -49,47 +48,29 @@ export default defineComponent({
             };
         },
 
+        referers(): NamedMetrics[] {
+            return metricsService.group(this.data, v => v.referers)
+                .sort((a, b) => a.visits < b.visits ? 1 : -1);
+        },
+
         rows(): TableRow[] {
-            if (!this.data) {
-                return [];
-            }
-            const rows: RefererData[] = [];
-            for (const rangeData of this.data) {
-                if (rangeData.data.referers) {
-                    Object.entries(rangeData.data.referers).forEach(([referer, refererData]) => {
-                        let row = rows.find(v => v.referer === referer);
-                        if (!row) {
-                            row = {
-                                referer: referer,
-                                visits: 0,
-                                hits: 0,
-                            };
-                            rows.push(row);
-                        }
-                        row.visits += refererData.visits;
-                        row.hits += refererData.hits;
-                    });
-                }
-            }
-            return this.toTableRows(rows);
+            const total: number = this.referers.reduce((acc, v) => acc + v.visits, 0);
+            return this.referers.map(v => {
+                return {
+                    data: [
+                        v.name,
+                        textService.humanizeNumber(v.hits),
+                        textService.humanizeNumber(v.visits),
+                    ],
+                    fraction: total ? v.visits / total : 0,
+                };
+            });
         },
     },
 
     methods: {
-        toTableRows(refererData: RefererData[]): TableRow[] {
-            const total: number = refererData.reduce((acc, v) => acc + v.visits, 0);
-            return refererData
-                .sort((a, b) => a.visits < b.visits ? 1 : -1)
-                .map(v => {
-                    return {
-                        data: [
-                            v.referer,
-                            textService.humanizeNumber(v.hits),
-                            textService.humanizeNumber(v.visits),
-                        ],
-                        fraction: v.visits / total,
-                    };
-                });
+        clickRow(rowIndex: number): void {
+            this.$emit('filter', FilterDimension.Referer, this.referers[rowIndex].name);
         },
     },
 });

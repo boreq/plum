@@ -1,7 +1,6 @@
 import { defineComponent, markRaw, type PropType } from 'vue';
-import type { Dictionary, RangeData } from '@/dto/Data';
+import type { Data, Dictionary, RangeData } from '@/dto/Data';
 import { ChartColors } from '@/dto/ChartColors';
-import { DataService } from '@/services/DataService';
 import { TextService } from '@/services/TextService';
 import { GroupingType } from '@/dto/GroupingType';
 import { ChartAnimation } from '@/dto/ChartAnimation';
@@ -9,12 +8,11 @@ import { Chart } from '@/chartjs';
 
 class ChartData {
     label: string;
-    statuses: Dictionary<Dictionary<number>>;
+    statuses: Dictionary<number>;
 }
 
 type BarChart = Chart<'bar', number[], string>;
 
-const dataService = new DataService();
 const textService = new TextService();
 
 export default defineComponent({
@@ -65,14 +63,29 @@ export default defineComponent({
             const chartData: ChartData[] = this.data.map(rangeData => {
                 return {
                     label: textService.formatDate(rangeData.time, this.groupingType),
-                    statuses: dataService.getStatusMapping(rangeData.data),
+                    statuses: this.groupByStatusType(rangeData.data),
                 };
             });
             this.drawChart(chartData);
         },
 
+        groupByStatusType(data: Data): Dictionary<number> {
+            const rv: Dictionary<number> = {};
+            if (!data || !data.statuses) {
+                return rv;
+            }
+            Object.entries(data.statuses).forEach(([status, metrics]) => {
+                const statusType = this.toStatusString(status);
+                rv[statusType] = (rv[statusType] || 0) + metrics.hits;
+            });
+            return rv;
+        },
+
+        toStatusString(status: string): string {
+            return status[0] + 'xx';
+        },
+
         drawChart(chartData: ChartData[]): void {
-            const statuses = chartData.map(v => this.groupByStatusType(v));
             const labels: string[] = chartData.map(v => v.label);
 
             if (!this.chart) {
@@ -84,25 +97,15 @@ export default defineComponent({
                 this.chart.data.labels.push(label);
             }
 
-            // Prepare data
             const statusDatas: number[][] = [];
             for (let datasetIndex = 0; datasetIndex < this.chart.data.datasets.length; datasetIndex++) {
-                statusDatas.push([]);
-                statuses.forEach((statusData, statusIndex) => {
-                    const total = statusData.reduce((acc, [, hits]) => {
-                        return acc + hits;
-                    }, 0);
-                    const statusString = this.toStatusString((datasetIndex + 1).toString());
-                    const element = statusData.find(v => v[0] === statusString);
-                    if (element) {
-                        statusDatas[datasetIndex][statusIndex] = element[1] / total;
-                    } else {
-                        statusDatas[datasetIndex][statusIndex] = 0;
-                    }
-                });
+                const statusType = this.toStatusString((datasetIndex + 1).toString());
+                statusDatas.push(chartData.map(v => {
+                    const total = Object.values(v.statuses).reduce((acc, hits) => acc + hits, 0);
+                    return total ? (v.statuses[statusType] || 0) / total : 0;
+                }));
             }
 
-            // Update with zeroes
             for (let datasetIndex = 0; datasetIndex < this.chart.data.datasets.length; datasetIndex++) {
                 this.chart.data.datasets[datasetIndex].data.length = statusDatas[datasetIndex].length;
                 for (let dataIndex = 0; dataIndex < statusDatas[datasetIndex].length; dataIndex++) {
@@ -113,39 +116,12 @@ export default defineComponent({
             }
             this.chart.update('none');
 
-            // Update with real values and animate
             for (let datasetIndex = 0; datasetIndex < this.chart.data.datasets.length; datasetIndex++) {
                 statusDatas[datasetIndex].forEach((value, statusIndex) => {
                     this.chart.data.datasets[datasetIndex].data[statusIndex] = value;
                 });
             }
             this.chart.update();
-        },
-
-        groupByStatusType(chartData: ChartData): Array<[string, number]> {
-            return Object.entries(chartData.statuses)
-                .reduce<Array<[string, number]>>((acc, [status, uriMap]) => {
-                    let element = acc.find(([statusString]) => {
-                        return this.toStatusString(status) === statusString;
-                    });
-                    if (!element) {
-                        element = [this.toStatusString(status), 0];
-                        acc.push(element);
-                    }
-                    element[1] += this.getTotal(uriMap);
-                    return acc.sort((a, b) => a[0] < b[0] ? -1 : 1);
-                }, []);
-        },
-
-        getTotal(uriMap: Dictionary<number>): number {
-            return Object.entries(uriMap)
-                .reduce((acc, [, hits]) => {
-                    return acc + hits;
-                }, 0);
-        },
-
-        toStatusString(status: string): string {
-            return status[0] + 'xx';
         },
 
         createChart(): BarChart {

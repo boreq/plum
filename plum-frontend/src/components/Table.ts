@@ -58,8 +58,6 @@ export default defineComponent({
     },
 
     watch: {
-        // Rows are replaced whenever new data arrives, which can leave the
-        // current page out of range.
         rows(): void {
             if (this.page > this.allPages) {
                 this.page = 0;

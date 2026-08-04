@@ -2,6 +2,7 @@ import { defineComponent } from 'vue';
 import { TimePeriod } from '@/dto/TimePeriod';
 import { GroupingType } from '@/dto/GroupingType';
 import type { RangeData } from '@/dto/Data';
+import { FilterDimension, FilterLabels, filtersEqual, type Filter } from '@/dto/Filter';
 import { ApiService } from '@/services/ApiService';
 import HitsAndVisits from '@/components/HitsAndVisits.vue';
 import Summary from '@/components/Summary.vue';
@@ -11,6 +12,12 @@ import BytesSent from '@/components/BytesSent.vue';
 import BytesSentChart from '@/components/BytesSentChart.vue';
 import StatusCodesChart from '@/components/StatusCodesChart.vue';
 import StatusCodes from '@/components/StatusCodes.vue';
+
+class ActiveFilter {
+    dimension: FilterDimension;
+    label: string;
+    value: string;
+}
 
 const apiService = new ApiService();
 
@@ -29,7 +36,6 @@ export default defineComponent({
     },
 
     setup() {
-        // Exposed to the template so that it can reference the enum members.
         return {
             TimePeriod,
             GroupingType,
@@ -47,12 +53,28 @@ export default defineComponent({
             websites: [] as string[],
             selectedWebsite: '',
 
+            filter: {} as Filter,
+
             data: [] as RangeData[],
             rangeData: [] as RangeData[],
             selectedRangeData: null as RangeData,
 
             timeoutID: null as ReturnType<typeof setTimeout>,
         };
+    },
+
+    computed: {
+        activeFilters(): ActiveFilter[] {
+            return Object.values(FilterDimension)
+                .filter(dimension => this.filter[dimension])
+                .map(dimension => {
+                    return {
+                        dimension: dimension,
+                        label: FilterLabels[dimension],
+                        value: this.filter[dimension],
+                    };
+                });
+        },
     },
 
     created(): void {
@@ -67,16 +89,32 @@ export default defineComponent({
         selectTimePeriod(timePeriod: TimePeriod): void {
             this.selectedTimePeriod = timePeriod;
             this.selectAppropriateGroupingType(timePeriod);
-            if (!this.updating) {
-                this.reloadData();
-            }
+            this.reloadData();
         },
 
         selectGroupingType(groupingType: GroupingType): void {
             this.selectedGroupingType = groupingType;
-            if (!this.updating) {
-                this.reloadData();
+            this.reloadData();
+        },
+
+        addFilter(dimension: FilterDimension, value: string): void {
+            if (this.filter[dimension] === value) {
+                return;
             }
+            this.filter = {...this.filter, [dimension]: value};
+            this.filterChanged();
+        },
+
+        removeFilter(dimension: FilterDimension): void {
+            const filter = {...this.filter};
+            delete filter[dimension];
+            this.filter = filter;
+            this.filterChanged();
+        },
+
+        filterChanged(): void {
+            this.selectedRangeData = null;
+            this.reloadData();
         },
 
         selectData(index: number): void {
@@ -95,9 +133,7 @@ export default defineComponent({
 
         selectWebsite(website: string): void {
             this.selectedWebsite = website;
-            if (!this.updating) {
-                this.reloadData();
-            }
+            this.reloadData();
         },
 
         selectAppropriateGroupingType(timePeriod: TimePeriod): void {
@@ -127,27 +163,42 @@ export default defineComponent({
                     if (this.websites && this.websites.length > 0) {
                         this.selectedWebsite = this.websites[0];
                         this.reloadData();
+                    } else {
+                        this.updating = false;
                     }
+                })
+                .catch(() => {
+                    this.updating = false;
                 });
         },
 
         reloadData(): void {
             this.updating = true;
+            this.cancelReload();
             const timePeriod = this.selectedTimePeriod;
             const groupingType = this.selectedGroupingType;
             const selectedWebsite = this.selectedWebsite;
-            apiService.getTimeRange(selectedWebsite, timePeriod, groupingType)
+            const filter = this.filter;
+            apiService.getTimeRange(selectedWebsite, timePeriod, groupingType, filter)
                 .then(response => {
+                    if (!this.parametersUnchanged(selectedWebsite, timePeriod, groupingType, filter)) {
+                        return;
+                    }
                     this.updating = false;
                     this.rangeData = response.data;
                     this.updateSelectedData();
-                    this.scheduleReload(selectedWebsite, timePeriod, groupingType);
+                    this.scheduleReload(selectedWebsite, timePeriod, groupingType, filter);
+                })
+                .catch(() => {
+                    if (this.parametersUnchanged(selectedWebsite, timePeriod, groupingType, filter)) {
+                        this.updating = false;
+                    }
                 });
         },
 
-        scheduleReload(selectedWebsite: string, timePeriod: TimePeriod, groupingType: GroupingType): void {
+        scheduleReload(selectedWebsite: string, timePeriod: TimePeriod, groupingType: GroupingType, filter: Filter): void {
             this.cancelReload();
-            this.timeoutID = setTimeout(() => this.reloadLatestData(selectedWebsite, timePeriod, groupingType), 5000);
+            this.timeoutID = setTimeout(() => this.reloadLatestData(selectedWebsite, timePeriod, groupingType, filter), 5000);
         },
 
         cancelReload(): void {
@@ -156,20 +207,29 @@ export default defineComponent({
             }
         },
 
-        reloadLatestData(selectedWebsite: string, timePeriod: TimePeriod, groupingType: GroupingType): void {
+        reloadLatestData(selectedWebsite: string, timePeriod: TimePeriod, groupingType: GroupingType, filter: Filter): void {
             this.updatingLatest = true;
-            apiService.getTimePoint(selectedWebsite, timePeriod, groupingType)
+            apiService.getTimePoint(selectedWebsite, timePeriod, groupingType, filter)
                 .then(response => {
                     this.updatingLatest = false;
-                    if (selectedWebsite === this.selectedWebsite && timePeriod === this.selectedTimePeriod && groupingType === this.selectedGroupingType) {
+                    if (this.parametersUnchanged(selectedWebsite, timePeriod, groupingType, filter)) {
                         this.updateLatestData(response.data);
-                        this.scheduleReload(selectedWebsite, timePeriod, groupingType);
+                        this.scheduleReload(selectedWebsite, timePeriod, groupingType, filter);
                     }
                 })
                 .catch(() => {
                     this.updatingLatest = false;
-                    this.scheduleReload(selectedWebsite, timePeriod, groupingType);
+                    if (this.parametersUnchanged(selectedWebsite, timePeriod, groupingType, filter)) {
+                        this.scheduleReload(selectedWebsite, timePeriod, groupingType, filter);
+                    }
                 });
+        },
+
+        parametersUnchanged(selectedWebsite: string, timePeriod: TimePeriod, groupingType: GroupingType, filter: Filter): boolean {
+            return selectedWebsite === this.selectedWebsite
+                && timePeriod === this.selectedTimePeriod
+                && groupingType === this.selectedGroupingType
+                && filtersEqual(filter, this.filter);
         },
 
         updateLatestData(rangeData: RangeData): void {

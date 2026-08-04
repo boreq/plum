@@ -2,63 +2,36 @@ package core
 
 import (
 	"crypto"
+	_ "crypto/sha512"
 
 	"github.com/boreq/plum/parser"
 )
 
 func NewData() *Data {
 	return &Data{
-		Referers: make(map[string]*RefererData),
-		Uris:     make(map[string]*UriData),
-		Visits:   NewSet(),
+		Uris: make(map[string]*UriData),
 	}
 }
 
 type Data struct {
-	Referers map[string]*RefererData `json:"referers"`
-	Uris     map[string]*UriData     `json:"uris"`
-	Visits   Set                     `json:"visits"`
+	Uris map[string]*UriData
 }
 
 func (d *Data) Insert(entry *parser.Entry) error {
 	visit := createVisitHash(entry)
 
-	d.InsertVisit(visit)
-
-	refererData := d.GetOrCreateRefererData(entry.Referer)
-	refererData.InsertHits(1)
-	refererData.InsertVisit(visit)
-
-	uriData := d.GetOrCreateUriData(entry.HttpRequestURI)
-	uriData.InsertVisit(visit)
-	uriData.AddBodyBytesSent(entry.BodyBytesSent)
-	statusData := uriData.GetOrCreateStatusData(entry.Status)
-	statusData.InsertHits(1)
+	uriData := d.getOrCreateUriData(entry.HttpRequestURI)
+	statusData := uriData.getOrCreateStatusData(entry.Status)
+	refererData := statusData.getOrCreateRefererData(entry.Referer)
+	refererData.Insert(visit, entry.BodyBytesSent)
 
 	return nil
 }
 
-func (d *Data) GetOrCreateRefererData(referer string) *RefererData {
-	refererData, ok := d.Referers[referer]
-	if !ok {
-		refererData = &RefererData{
-			Visits: NewSet(),
-			Hits:   0,
-		}
-		d.Referers[referer] = refererData
-	}
-	return refererData
-}
-
-func (d *Data) InsertVisit(visit string) {
-	d.Visits.Add(visit)
-}
-
-func (d *Data) GetOrCreateUriData(uri string) *UriData {
+func (d *Data) getOrCreateUriData(uri string) *UriData {
 	uriData, ok := d.Uris[uri]
 	if !ok {
 		uriData = &UriData{
-			Visits:   NewSet(),
 			Statuses: make(map[string]*StatusData),
 		}
 		d.Uris[uri] = uriData
@@ -66,38 +39,15 @@ func (d *Data) GetOrCreateUriData(uri string) *UriData {
 	return uriData
 }
 
-type RefererData struct {
-	Visits Set `json:"visits"`
-	Hits   int `json:"hits"`
-}
-
-func (b *RefererData) InsertHits(hits int) {
-	b.Hits += hits
-}
-
-func (b *RefererData) InsertVisit(visit string) {
-	b.Visits.Add(visit)
-}
-
 type UriData struct {
-	Visits        Set                    `json:"visits"`
-	BodyBytesSent int                    `json:"bytes"`
-	Statuses      map[string]*StatusData `json:"statuses"`
+	Statuses map[string]*StatusData
 }
 
-func (b *UriData) InsertVisit(visit string) {
-	b.Visits.Add(visit)
-}
-
-func (b *UriData) AddBodyBytesSent(bytes int) {
-	b.BodyBytesSent += bytes
-}
-
-func (b *UriData) GetOrCreateStatusData(status string) *StatusData {
+func (b *UriData) getOrCreateStatusData(status string) *StatusData {
 	statusData, ok := b.Statuses[status]
 	if !ok {
 		statusData = &StatusData{
-			Hits: 0,
+			Referers: make(map[string]*RefererData),
 		}
 		b.Statuses[status] = statusData
 	}
@@ -105,11 +55,22 @@ func (b *UriData) GetOrCreateStatusData(status string) *StatusData {
 }
 
 type StatusData struct {
-	Hits int `json:"hits"`
+	Referers map[string]*RefererData
 }
 
-func (b *StatusData) InsertHits(hits int) {
-	b.Hits += hits
+func (b *StatusData) getOrCreateRefererData(referer string) *RefererData {
+	refererData, ok := b.Referers[referer]
+	if !ok {
+		refererData = &RefererData{
+			Metrics: NewMetrics(),
+		}
+		b.Referers[referer] = refererData
+	}
+	return refererData
+}
+
+type RefererData struct {
+	Metrics
 }
 
 var visitHash = crypto.SHA512_256

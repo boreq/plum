@@ -1,7 +1,6 @@
 import { defineComponent, markRaw, type PropType } from 'vue';
 import type { RangeData } from '@/dto/Data';
 import { ChartColors } from '@/dto/ChartColors';
-import { DataService } from '@/services/DataService';
 import { TextService } from '@/services/TextService';
 import { GroupingType } from '@/dto/GroupingType';
 import { ChartAnimation } from '@/dto/ChartAnimation';
@@ -14,7 +13,6 @@ class ChartData {
 
 type LineChart = Chart<'line', number[], string>;
 
-const dataService = new DataService();
 const textService = new TextService();
 
 export default defineComponent({
@@ -66,7 +64,7 @@ export default defineComponent({
                 .map(rangeData => {
                     return {
                         label: textService.formatDate(rangeData.time, this.groupingType),
-                        bytes: dataService.getBytesSent(rangeData.data),
+                        bytes: rangeData.data.bytes,
                     };
                 });
             this.drawChart(chartData);
@@ -85,7 +83,6 @@ export default defineComponent({
                 this.chart.data.labels.push(label);
             }
 
-            // Update with zeroes
             this.chart.data.datasets[0].data.length = bytes.length;
             bytes.forEach((value, i) => {
                 if (!this.chart.data.datasets[0].data[i]) {
@@ -94,7 +91,6 @@ export default defineComponent({
             });
             this.chart.update('none');
 
-            // Update with real values and animate
             bytes.forEach((value, i) => {
                 this.chart.data.datasets[0].data[i] = value;
             });

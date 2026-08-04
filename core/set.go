@@ -1,9 +1,5 @@
 package core
 
-import (
-	"strconv"
-)
-
 func NewSet() Set {
 	return make(Set)
 }
@@ -16,8 +12,4 @@ func (s *Set) Add(value string) {
 
 func (s Set) Size() int {
 	return len(s)
-}
-
-func (s *Set) MarshalJSON() ([]byte, error) {
-	return []byte(strconv.Itoa(s.Size())), nil
 }

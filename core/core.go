@@ -13,14 +13,6 @@ import (
 	"github.com/hpcloud/tail"
 )
 
-func NewTracker(p *parser.Parser, r *Repository) *Tracker {
-	return &Tracker{
-		Repository: r,
-		parser:     p,
-		log:        logging.New("core/tracker"),
-	}
-}
-
 type Tracker struct {
 	Repository *Repository
 	parser     *parser.Parser
@@ -29,6 +21,14 @@ type Tracker struct {
 	lines      int
 	errors     int
 	statsMutex sync.Mutex
+}
+
+func NewTracker(p *parser.Parser, r *Repository) *Tracker {
+	return &Tracker{
+		Repository: r,
+		parser:     p,
+		log:        logging.New("core/tracker"),
+	}
 }
 
 func (t *Tracker) Follow(filepath string) error {

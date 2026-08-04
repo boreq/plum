@@ -1,16 +1,13 @@
 import { defineComponent, type PropType } from 'vue';
 import type { RangeData } from '@/dto/Data';
 import { Align, type TableHeader, type TableRow } from '@/dto/Table';
+import { FilterDimension } from '@/dto/Filter';
+import { MetricsService, type NamedMetrics } from '@/services/MetricsService';
 import { UriService } from '@/services/UriService';
 import { TextService } from '@/services/TextService';
 import Table from '@/components/Table.vue';
 
-class UriData {
-    uri: string;
-    visits: number;
-    hits: number;
-}
-
+const metricsService = new MetricsService();
 const uriService = new UriService();
 const textService = new TextService();
 
@@ -27,6 +24,8 @@ export default defineComponent({
             default: () => [],
         },
     },
+
+    emits: ['filter'],
 
     computed: {
         header(): TableHeader {
@@ -51,50 +50,34 @@ export default defineComponent({
             };
         },
 
+        allPages(): NamedMetrics[] {
+            return metricsService.group(this.data, v => v.uris);
+        },
+
+        pages(): NamedMetrics[] {
+            return Array.from(this.allPages)
+                .sort((a, b) => a.visits < b.visits ? 1 : -1)
+                .filter(v => !uriService.isStaticResource(v.name));
+        },
+
         rows(): TableRow[] {
-            if (!this.data) {
-                return [];
-            }
-            const rows: UriData[] = [];
-            for (const rangeData of this.data) {
-                if (rangeData.data.uris) {
-                    Object.entries(rangeData.data.uris).forEach(([uri, uriData]) => {
-                        let row = rows.find(v => v.uri === uri);
-                        if (!row) {
-                            row = {
-                                uri: uri,
-                                visits: 0,
-                                hits: 0,
-                            };
-                            rows.push(row);
-                        }
-                        row.visits += uriData.visits;
-                        Object.entries(uriData.statuses).forEach(([, statusData]) => {
-                            row.hits += statusData.hits;
-                        });
-                    });
-                }
-            }
-            return this.toTableRows(rows);
+            const total: number = this.allPages.reduce((acc, v) => acc + v.visits, 0);
+            return this.pages.map(v => {
+                return {
+                    data: [
+                        v.name,
+                        textService.humanizeNumber(v.hits),
+                        textService.humanizeNumber(v.visits),
+                    ],
+                    fraction: total ? v.visits / total : 0,
+                };
+            });
         },
     },
 
     methods: {
-        toTableRows(uriData: UriData[]): TableRow[] {
-            const total: number = uriData.reduce((acc, v) => acc + v.visits, 0);
-            return uriData
-                .sort((a, b) => a.visits < b.visits ? 1 : -1)
-                .filter(v => !uriService.isStaticResource(v.uri))
-                .map(v => {
-                    return {
-                        data: [
-                            v.uri,
-                            textService.humanizeNumber(v.hits),
-                            textService.humanizeNumber(v.visits),
-                        ],
-                        fraction: v.visits / total,
-                    };
-                });
+        clickRow(rowIndex: number): void {
+            this.$emit('filter', FilterDimension.Uri, this.pages[rowIndex].name);
         },
     },
 });

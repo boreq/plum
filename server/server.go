@@ -57,14 +57,11 @@ func (h *handler) Hour(r *http.Request, ps httprouter.Params) (interface{}, api.
 		return nil, api.BadRequest
 	}
 
-	data, ok := repository.RetrieveHour(year, time.Month(month), day, hour)
+	data, ok := repository.RetrieveHour(year, time.Month(month), day, hour, getFilter(r))
 	if !ok {
 		return nil, api.NotFound
 	}
-	rangeData := RangeData{
-		Time: time.Date(year, time.Month(month), day, hour, 0, 0, 0, time.UTC),
-		Data: data,
-	}
+	rangeData := NewRangeData(time.Date(year, time.Month(month), day, hour, 0, 0, 0, time.UTC), data)
 	return rangeData, nil
 }
 
@@ -94,14 +91,11 @@ func (h *handler) Day(r *http.Request, ps httprouter.Params) (interface{}, api.E
 		return nil, api.BadRequest
 	}
 
-	data, ok := repository.RetrieveDay(year, time.Month(month), day)
+	data, ok := repository.RetrieveDay(year, time.Month(month), day, getFilter(r))
 	if !ok {
 		return nil, api.NotFound
 	}
-	rangeData := RangeData{
-		Time: time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC),
-		Data: data,
-	}
+	rangeData := NewRangeData(time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC), data)
 	return rangeData, nil
 }
 
@@ -126,14 +120,11 @@ func (h *handler) Month(r *http.Request, ps httprouter.Params) (interface{}, api
 		return nil, api.BadRequest
 	}
 
-	data, ok := repository.RetrieveMonth(year, time.Month(month))
+	data, ok := repository.RetrieveMonth(year, time.Month(month), getFilter(r))
 	if !ok {
 		return nil, api.NotFound
 	}
-	rangeData := RangeData{
-		Time: time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC),
-		Data: data,
-	}
+	rangeData := NewRangeData(time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC), data)
 	return rangeData, nil
 }
 
@@ -191,17 +182,15 @@ func (h *handler) RangeHourly(r *http.Request, ps httprouter.Params) (interface{
 		return nil, api.BadRequest
 	}
 
+	filter := getFilter(r)
+
 	var response []RangeData
 	for t := from; !t.After(to); t = t.Add(time.Hour) {
-		data, ok := repository.RetrieveHour(t.Year(), t.Month(), t.Day(), t.Hour())
+		data, ok := repository.RetrieveHour(t.Year(), t.Month(), t.Day(), t.Hour(), filter)
 		if !ok {
 			return nil, api.InternalServerError
 		}
-		rangeData := RangeData{
-			Time: t,
-			Data: data,
-		}
-		response = append(response, rangeData)
+		response = append(response, NewRangeData(t, data))
 
 	}
 	return response, nil
@@ -251,17 +240,15 @@ func (h *handler) RangeDaily(r *http.Request, ps httprouter.Params) (interface{}
 		return nil, api.BadRequest
 	}
 
+	filter := getFilter(r)
+
 	var response []RangeData
 	for t := from; !t.After(to); t = t.AddDate(0, 0, 1) {
-		data, ok := repository.RetrieveDay(t.Year(), t.Month(), t.Day())
+		data, ok := repository.RetrieveDay(t.Year(), t.Month(), t.Day(), filter)
 		if !ok {
 			return nil, api.InternalServerError
 		}
-		rangeData := RangeData{
-			Time: t,
-			Data: data,
-		}
-		response = append(response, rangeData)
+		response = append(response, NewRangeData(t, data))
 
 	}
 	return response, nil
@@ -301,20 +288,27 @@ func (h *handler) RangeMonthly(r *http.Request, ps httprouter.Params) (interface
 		return nil, api.BadRequest
 	}
 
+	filter := getFilter(r)
+
 	var response []RangeData
 	for t := from; !t.After(to); t = t.AddDate(0, 1, 0) {
-		data, ok := repository.RetrieveMonth(t.Year(), t.Month())
+		data, ok := repository.RetrieveMonth(t.Year(), t.Month(), filter)
 		if !ok {
 			return nil, api.InternalServerError
 		}
-		rangeData := RangeData{
-			Time: t,
-			Data: data,
-		}
-		response = append(response, rangeData)
+		response = append(response, NewRangeData(t, data))
 
 	}
 	return response, nil
+}
+
+func getFilter(r *http.Request) core.Filter {
+	q := r.URL.Query()
+	return core.Filter{
+		Uri:     q.Get("uri"),
+		Status:  q.Get("status"),
+		Referer: q.Get("referer"),
+	}
 }
 
 func getParamInt(ps httprouter.Params, name string) (int, error) {
@@ -323,11 +317,6 @@ func getParamInt(ps httprouter.Params, name string) (int, error) {
 
 func getParamString(ps httprouter.Params, name string) string {
 	return strings.TrimSuffix(ps.ByName(name), ".json")
-}
-
-type RangeData struct {
-	Time time.Time  `json:"time"`
-	Data *core.Data `json:"data"`
 }
 
 func Serve(repositories *core.Repositories, address string) error {

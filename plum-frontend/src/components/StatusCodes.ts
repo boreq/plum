@@ -1,17 +1,12 @@
 import { defineComponent, type PropType } from 'vue';
-import type { Dictionary, RangeData } from '@/dto/Data';
+import type { RangeData } from '@/dto/Data';
 import { Align, type TableHeader, type TableRow } from '@/dto/Table';
-import { DataService } from '@/services/DataService';
+import { FilterDimension } from '@/dto/Filter';
+import { MetricsService, type NamedMetrics } from '@/services/MetricsService';
 import { TextService } from '@/services/TextService';
 import Table from '@/components/Table.vue';
-import TablePopup from '@/components/TablePopup.vue';
 
-class StatusCodesData {
-    status: string;
-    uris: Dictionary<number>;
-}
-
-const dataService = new DataService();
+const metricsService = new MetricsService();
 const textService = new TextService();
 
 export default defineComponent({
@@ -19,7 +14,6 @@ export default defineComponent({
 
     components: {
         Table,
-        TablePopup,
     },
 
     props: {
@@ -29,13 +23,7 @@ export default defineComponent({
         },
     },
 
-    data() {
-        return {
-            modalRows: [] as TableRow[],
-            modalTitle: '',
-            displayModal: false,
-        };
-    },
+    emits: ['filter'],
 
     computed: {
         header(): TableHeader {
@@ -55,99 +43,28 @@ export default defineComponent({
             };
         },
 
-        popupHeader(): TableHeader {
-            return {
-                columns: [
-                    {
-                        label: 'Resource',
-                        width: null,
-                        align: Align.Left,
-                    },
-                    {
-                        label: 'Hits',
-                        width: '100px',
-                        align: Align.Right,
-                    },
-                ],
-            };
+        statusCodes(): NamedMetrics[] {
+            return metricsService.group(this.data, v => v.statuses)
+                .sort((a, b) => a.name > b.name ? 1 : -1);
         },
 
         rows(): TableRow[] {
-            if (!this.data) {
-                return [];
-            }
-            return this.toTableRows(this.getStatusCodesData());
+            const total: number = this.statusCodes.reduce((acc, v) => acc + v.hits, 0);
+            return this.statusCodes.map(v => {
+                return {
+                    data: [
+                        textService.getHttpStatusText(v.name),
+                        textService.humanizeNumber(v.hits),
+                    ],
+                    fraction: total ? v.hits / total : 0,
+                };
+            });
         },
     },
 
     methods: {
         clickRow(rowIndex: number): void {
-            const row = this.getStatusCodesData()[rowIndex];
-            this.modalRows = this.getChildren(row);
-            this.modalTitle = textService.getHttpStatusText(row.status);
-            this.displayModal = true;
-        },
-
-        getStatusCodesData(): StatusCodesData[] {
-            const rows: StatusCodesData[] = [];
-            for (const rangeData of this.data) {
-                if (rangeData.data) {
-                    Object.entries(dataService.getStatusMapping(rangeData.data))
-                        .forEach(([status, uriMap]) => {
-                            let row = rows.find(v => v.status === status);
-                            if (!row) {
-                                row = {
-                                    status: status,
-                                    uris: {},
-                                };
-                                rows.push(row);
-                            }
-                            Object.entries(uriMap).forEach(([uri, hits]) => {
-                                row.uris[uri] = (row.uris[uri] || 0) + hits;
-                            });
-                        });
-                }
-            }
-            return rows.sort((a, b) => a.status > b.status ? 1 : -1);
-        },
-
-        toTableRows(statusCodesData: StatusCodesData[]): TableRow[] {
-            const total: number = statusCodesData.reduce((acc, v) => acc + this.getTotal(v), 0);
-            return statusCodesData
-                .reduce<TableRow[]>((acc, v) => {
-                    const statusTotal = this.getTotal(v);
-                    acc.push({
-                        data: [
-                            textService.getHttpStatusText(v.status),
-                            textService.humanizeNumber(statusTotal),
-                        ],
-                        fraction: statusTotal / total,
-                    });
-                    return acc;
-                }, []);
-        },
-
-        getTotal(statusCodesData: StatusCodesData): number {
-            return Object.entries(statusCodesData.uris)
-                .reduce((acc, [, hits]) => {
-                    return acc + hits;
-                }, 0);
-        },
-
-        getChildren(v: StatusCodesData): TableRow[] {
-            const total: number = this.getTotal(v);
-
-            return Object.entries(v.uris)
-                .map(([uri, hits]) => {
-                    return {
-                        data: [
-                            uri,
-                            hits.toString(),
-                        ],
-                        fraction: hits / total,
-                    };
-                })
-                .sort((a, b) => Number(a.data[1]) < Number(b.data[1]) ? 1 : -1);
+            this.$emit('filter', FilterDimension.Status, this.statusCodes[rowIndex].name);
         },
     },
 });

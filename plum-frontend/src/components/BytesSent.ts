@@ -1,14 +1,12 @@
 import { defineComponent, type PropType } from 'vue';
 import type { RangeData } from '@/dto/Data';
 import { Align, type TableHeader, type TableRow } from '@/dto/Table';
+import { FilterDimension } from '@/dto/Filter';
+import { MetricsService, type NamedMetrics } from '@/services/MetricsService';
 import { TextService } from '@/services/TextService';
 import Table from '@/components/Table.vue';
 
-class BytesSentData {
-    uri: string;
-    bytes: number;
-}
-
+const metricsService = new MetricsService();
 const textService = new TextService();
 
 export default defineComponent({
@@ -24,6 +22,8 @@ export default defineComponent({
             default: () => [],
         },
     },
+
+    emits: ['filter'],
 
     computed: {
         header(): TableHeader {
@@ -43,54 +43,28 @@ export default defineComponent({
             };
         },
 
+        resources(): NamedMetrics[] {
+            return metricsService.group(this.data, v => v.uris)
+                .sort((a, b) => a.bytes < b.bytes ? 1 : -1);
+        },
+
         rows(): TableRow[] {
-            if (!this.data) {
-                return [];
-            }
-            return this.toTableRows(this.groupBytesSentByUri(this.data));
+            const total: number = this.resources.reduce((acc, v) => acc + v.bytes, 0);
+            return this.resources.map(v => {
+                return {
+                    data: [
+                        v.name,
+                        textService.humanizeBytes(v.bytes),
+                    ],
+                    fraction: total ? v.bytes / total : 0,
+                };
+            });
         },
     },
 
     methods: {
-        groupBytesSentByUri(data: RangeData[]): BytesSentData[] {
-            return data
-                .reduce<BytesSentData[]>((acc, rangeData) => {
-                    if (rangeData.data.uris) {
-                        Object.entries(rangeData.data.uris)
-                            .forEach(([uri, uriData]) => {
-                                const row = this.findOrCreateRow(acc, uri);
-                                row.bytes += uriData.bytes;
-                            });
-                    }
-                    return acc;
-                }, []);
-        },
-
-        findOrCreateRow(acc: BytesSentData[], uri: string): BytesSentData {
-            let row = acc.find(v => v.uri === uri);
-            if (!row) {
-                row = {
-                    uri: uri,
-                    bytes: 0,
-                };
-                acc.push(row);
-            }
-            return row;
-        },
-
-        toTableRows(bytesSentData: BytesSentData[]): TableRow[] {
-            const total: number = bytesSentData.reduce((acc, v) => acc + v.bytes, 0);
-            return bytesSentData
-                .sort((a, b) => a.bytes < b.bytes ? 1 : -1)
-                .map(v => {
-                    return {
-                        data: [
-                            v.uri,
-                            textService.humanizeBytes(v.bytes),
-                        ],
-                        fraction: total ? v.bytes / total : 0,
-                    };
-                });
+        clickRow(rowIndex: number): void {
+            this.$emit('filter', FilterDimension.Uri, this.resources[rowIndex].name);
         },
     },
 });

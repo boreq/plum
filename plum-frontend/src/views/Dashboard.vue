@@ -44,6 +44,14 @@
               </ul>
           </div>
 
+          <div class="box box-dimmed" v-for="activeFilter of activeFilters" :key="activeFilter.dimension">
+              <a class="active"
+                 title="Click to remove this filter."
+                 v-on:click="removeFilter(activeFilter.dimension)">
+                  {{ activeFilter.label }}: {{ activeFilter.value }}
+              </a>
+          </div>
+
           <div class="box box-dimmed" v-if="selectedRangeData">
               <a title="Click to cancel." v-on:click="selectData(null)">You are inspecting a single data point.</a>
           </div>
@@ -61,22 +69,22 @@
               <HitsAndVisits :data="data" :groupingType="selectedGroupingType" v-on:select-data="selectData($event)"></HitsAndVisits>
           </div>
           <div class="box box-normal pages">
-              <Pages :data="data"></Pages>
+              <Pages :data="data" v-on:filter="addFilter"></Pages>
           </div>
           <div class="box box-normal referers">
-              <Referers :data="data"></Referers>
+              <Referers :data="data" v-on:filter="addFilter"></Referers>
           </div>
           <div class="box box-normal bytes-sent-chart">
               <BytesSentChart :data="data" :groupingType="selectedGroupingType" v-on:select-data="selectData($event)"></BytesSentChart>
           </div>
           <div class="box box-normal bytes-sent">
-              <BytesSent :data="data"></BytesSent>
+              <BytesSent :data="data" v-on:filter="addFilter"></BytesSent>
           </div>
           <div class="box box-normal status-codes-chart">
               <StatusCodesChart :data="data" :groupingType="selectedGroupingType" v-on:select-data="selectData($event)"></StatusCodesChart>
           </div>
           <div class="box box-normal status-codes">
-              <StatusCodes :data="data"></StatusCodes>
+              <StatusCodes :data="data" v-on:filter="addFilter"></StatusCodes>
           </div>
       </div>
   </div>
