@@ -1,6 +1,6 @@
 <template>
     <div>
-        <canvas id="chart"></canvas>
+        <canvas ref="canvas"></canvas>
     </div>
 </template>
 <script lang="ts" src="./HitsAndVisits.ts"></script>

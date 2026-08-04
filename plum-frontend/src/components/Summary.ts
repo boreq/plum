@@ -1,36 +1,41 @@
-import { Component, Prop, Vue } from 'vue-property-decorator';
-import { RangeData } from '@/dto/Data';
+import { defineComponent, type PropType } from 'vue';
+import type { RangeData } from '@/dto/Data';
 import { DataService } from '@/services/DataService';
 import { TextService } from '@/services/TextService';
 
-@Component
-export default class Summary extends Vue {
+const dataService = new DataService();
+const textService = new TextService();
 
-    @Prop()
-    private data: RangeData[];
+export default defineComponent({
+    name: 'Summary',
 
-    private dataService = new DataService();
-    private textService = new TextService();
+    props: {
+        data: {
+            type: Array as PropType<RangeData[]>,
+            default: () => [],
+        },
+    },
 
-    get hits(): string {
-        const sum = this.data.reduce((acc, v) => {
-            return acc + this.dataService.getHits(v.data);
-        }, 0);
-        return this.textService.humanizeNumber(sum);
-    }
+    computed: {
+        hits(): string {
+            const sum = this.data.reduce((acc, v) => {
+                return acc + dataService.getHits(v.data);
+            }, 0);
+            return textService.humanizeNumber(sum);
+        },
 
-    get visits(): string {
-        const sum = this.data.reduce((acc, v) => {
-            return acc + this.dataService.getVisits(v.data);
-        }, 0);
-        return this.textService.humanizeNumber(sum);
-    }
+        visits(): string {
+            const sum = this.data.reduce((acc, v) => {
+                return acc + dataService.getVisits(v.data);
+            }, 0);
+            return textService.humanizeNumber(sum);
+        },
 
-    get bytesSent(): string {
-        const sum = this.data.reduce((acc, v) => {
-            return acc + this.dataService.getBytesSent(v.data);
-        }, 0);
-        return this.textService.humanizeBytes(sum, 0);
-    }
-
-}
+        bytesSent(): string {
+            const sum = this.data.reduce((acc, v) => {
+                return acc + dataService.getBytesSent(v.data);
+            }, 0);
+            return textService.humanizeBytes(sum, 0);
+        },
+    },
+});

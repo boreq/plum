@@ -1,13 +1,13 @@
-import { Data, Dictionary } from '@/dto/Data';
+import type { Data, Dictionary } from '@/dto/Data';
 
 export class DataService {
 
     getHits(data: Data): number {
         let sum = 0;
         if (data.uris) {
-            Object.entries(data.uris).forEach(([uri, uriData]) => {
+            Object.entries(data.uris).forEach(([, uriData]) => {
                 if (uriData.statuses) {
-                    Object.entries(uriData.statuses).forEach(([status, statusData]) => {
+                    Object.entries(uriData.statuses).forEach(([, statusData]) => {
                         sum += statusData.hits;
                     });
                 }
@@ -23,7 +23,7 @@ export class DataService {
     getBytesSent(data: Data): number {
         let sum = 0;
         if (data.uris) {
-            Object.entries(data.uris).forEach(([uri, uriData]) => {
+            Object.entries(data.uris).forEach(([, uriData]) => {
                 sum += uriData.bytes;
             });
         }

@@ -1,92 +1,114 @@
-import { Component, Prop, Vue } from 'vue-property-decorator';
-import { TableHeader, TableRow } from '@/dto/Table';
+import { defineComponent, type PropType } from 'vue';
+import type { TableHeader, TableRow } from '@/dto/Table';
 
-@Component
-export default class Table extends Vue {
+export default defineComponent({
+    name: 'Table',
 
-    @Prop()
-    header: TableHeader;
+    props: {
+        header: {
+            type: Object as PropType<TableHeader>,
+            default: null,
+        },
+        rows: {
+            type: Array as PropType<TableRow[]>,
+            default: () => [],
+        },
+        perPage: {
+            type: Number,
+            default: 10,
+        },
+        clickable: {
+            type: Boolean,
+            default: false,
+        },
+    },
 
-    @Prop()
-    rows: TableRow[];
+    emits: ['click-row'],
 
-    @Prop({default: 10})
-    perPage: number;
+    data() {
+        return {
+            page: 0,
+        };
+    },
 
-    @Prop()
-    clickable: boolean;
+    computed: {
+        dataPresent(): boolean {
+            return this.rows && this.rows.length > 0;
+        },
 
-    page = 0;
+        limitedRows(): TableRow[] {
+            const start = this.page * this.perPage;
+            return this.rows.slice(start, start + this.perPage);
+        },
 
-    get dataPresent(): boolean {
-        return this.rows && this.rows.length > 0;
-    }
+        hasNextPage(): boolean {
+            return this.page < this.allPages;
+        },
 
-    get limitedRows(): TableRow[] {
-        if (this.page > this.allPages) {
-            this.page = 0;
-        }
-        const start = this.page * this.perPage;
-        return this.rows.slice(start, start + this.perPage);
-    }
+        hasPrevPage(): boolean {
+            return this.page > 0;
+        },
 
-    getColumnStyle(columnIndex: number): string {
-        const column = this.header.columns[columnIndex];
-        const styles: string[] = [];
+        allPages(): number {
+            if (this.rows) {
+                return Math.floor(this.rows.length / this.perPage);
+            }
+            return 0;
+        },
+    },
 
-        if (column.width) {
-            styles.push(`width: ${column.width}`);
-        } else {
-            styles.push('flex: 1');
-        }
+    watch: {
+        // Rows are replaced whenever new data arrives, which can leave the
+        // current page out of range.
+        rows(): void {
+            if (this.page > this.allPages) {
+                this.page = 0;
+            }
+        },
+    },
 
-        if (column.align) {
-            styles.push(`text-align: ${column.align}`);
-        }
+    methods: {
+        getColumnStyle(columnIndex: number): string {
+            const column = this.header.columns[columnIndex];
+            const styles: string[] = [];
 
-        return styles.join(';');
-    }
+            if (column.width) {
+                styles.push(`width: ${column.width}`);
+            } else {
+                styles.push('flex: 1');
+            }
 
-    getBackgroundStyle(rowIndex: number): string {
-        const row = this.limitedRows[rowIndex];
-        if (row.fraction) {
-            const percentage = Math.round(row.fraction * 100);
-            return `width: ${percentage}%;`;
-        }
-        return 'display: none;';
-    }
+            if (column.align) {
+                styles.push(`text-align: ${column.align}`);
+            }
 
+            return styles.join(';');
+        },
 
-    prevPage(): void {
-        if (this.hasPrevPage) {
-            this.page -= 1;
-        }
-    }
+        getBackgroundStyle(rowIndex: number): string {
+            const row = this.limitedRows[rowIndex];
+            if (row.fraction) {
+                const percentage = Math.round(row.fraction * 100);
+                return `width: ${percentage}%;`;
+            }
+            return 'display: none;';
+        },
 
-    nextPage(): void {
-        if (this.hasNextPage) {
-            this.page += 1;
-        }
-    }
+        prevPage(): void {
+            if (this.hasPrevPage) {
+                this.page -= 1;
+            }
+        },
 
-    click(rowIndex: number): void {
-        const index = this.perPage * this.page + rowIndex;
-        this.$emit('click-row', index);
-    }
+        nextPage(): void {
+            if (this.hasNextPage) {
+                this.page += 1;
+            }
+        },
 
-    get hasNextPage() {
-        return this.page < this.allPages;
-    }
-
-    get hasPrevPage() {
-        return this.page > 0;
-    }
-
-    get allPages(): number {
-        if (this.rows) {
-            return Math.floor(this.rows.length / this.perPage);
-        }
-        return 0;
-    }
-
-}
+        click(rowIndex: number): void {
+            const index = this.perPage * this.page + rowIndex;
+            this.$emit('click-row', index);
+        },
+    },
+});

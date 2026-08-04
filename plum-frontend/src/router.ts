@@ -1,12 +1,8 @@
-import Vue from 'vue';
-import Router from 'vue-router';
+import { createRouter, createWebHistory } from 'vue-router';
 import Dashboard from './views/Dashboard.vue';
 
-Vue.use(Router);
-
-export default new Router({
-    mode: 'history',
-    base: process.env.BASE_URL,
+export default createRouter({
+    history: createWebHistory(import.meta.env.BASE_URL),
     routes: [
         {
             path: '/',

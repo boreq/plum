@@ -1,5 +1,5 @@
-import filesize from 'filesize';
-import HttpStatusCodes from 'http-status-codes';
+import { filesize } from 'filesize';
+import { getReasonPhrase } from 'http-status-codes';
 import { GroupingType } from '@/dto/GroupingType';
 import { DateTime } from 'luxon';
 
@@ -16,18 +16,17 @@ export class TextService {
     }
 
     humanizeBytes(n: number, round = 2): string {
-        const options = {
+        return filesize(n, {
             base: 10,
             round: round,
-        };
-        return filesize(n, options);
+        });
     }
 
     getHttpStatusText(status: string): string {
         try {
-            const statusText = HttpStatusCodes.getStatusText(Number(status));
+            const statusText = getReasonPhrase(Number(status));
             return `${status} ${statusText}`;
-        } catch (e) {
+        } catch {
             return status;
         }
     }

@@ -1,200 +1,227 @@
-import { Component, Prop, Vue, Watch } from 'vue-property-decorator';
-import { Dictionary, RangeData } from '@/dto/Data';
+import { defineComponent, markRaw, type PropType } from 'vue';
+import type { Dictionary, RangeData } from '@/dto/Data';
 import { ChartColors } from '@/dto/ChartColors';
 import { DataService } from '@/services/DataService';
 import { TextService } from '@/services/TextService';
 import { GroupingType } from '@/dto/GroupingType';
 import { ChartAnimation } from '@/dto/ChartAnimation';
-import Chart from 'chart.js';
+import { Chart } from '@/chartjs';
 
 class ChartData {
     label: string;
     statuses: Dictionary<Dictionary<number>>;
 }
 
-@Component
-export default class StatusCodesChart extends Vue {
+type BarChart = Chart<'bar', number[], string>;
 
-    @Prop()
-    private data: RangeData[];
+const dataService = new DataService();
+const textService = new TextService();
 
-    @Prop()
-    private groupingType: GroupingType;
+export default defineComponent({
+    name: 'StatusCodesChart',
 
-    private chart: Chart;
+    props: {
+        data: {
+            type: Array as PropType<RangeData[]>,
+            default: () => [],
+        },
+        groupingType: {
+            type: Number as PropType<GroupingType>,
+            default: GroupingType.Hourly,
+        },
+    },
 
-    private dataService = new DataService();
-    private textService = new TextService();
+    emits: ['select-data'],
 
-    @Watch('data')
-    onRangeDataChanged(value: RangeData[], oldValue: RangeData[]) {
-        this.redraw();
-    }
+    data() {
+        return {
+            chart: null as BarChart,
+        };
+    },
+
+    watch: {
+        data(): void {
+            this.redraw();
+        },
+    },
 
     mounted(): void {
         this.redraw();
-    }
+    },
 
-    private redraw(): void {
-        if (!this.data) {
-            return;
+    beforeUnmount(): void {
+        if (this.chart) {
+            this.chart.destroy();
+            this.chart = null;
         }
+    },
 
-        const chartData: ChartData[] = this.data.map(rangeData => {
-            return {
-                label: this.textService.formatDate(rangeData.time, this.groupingType),
-                statuses: this.dataService.getStatusMapping(rangeData.data),
-            };
-        });
-        this.drawChart(chartData);
-    }
+    methods: {
+        redraw(): void {
+            if (!this.data) {
+                return;
+            }
 
-    private drawChart(chartData: ChartData[]): void {
-        const statuses = chartData.map(v => this.groupByStatusType(v));
-        const labels: string[] = chartData.map(v => v.label);
-
-        if (!this.chart) {
-            this.chart = this.createChart();
-        }
-
-        this.chart.data.labels.length = 0;
-        for (const label of labels) {
-            this.chart.data.labels.push(label);
-        }
-
-        // Prepare data
-        const statusDatas: number[][] = [];
-        for (let datasetIndex = 0; datasetIndex < this.chart.data.datasets.length; datasetIndex++) {
-            statusDatas.push([]);
-            statuses.forEach((statusData, statusIndex) => {
-                const total = statusData.reduce((acc, [status, hits]) => {
-                    return acc + hits;
-                }, 0);
-                const statusString = this.toStatusString((datasetIndex + 1).toString());
-                const element = statusData.find(v => v[0] === statusString);
-                if (element) {
-                    statusDatas[datasetIndex][statusIndex] = element[1] / total;
-                } else {
-                    statusDatas[datasetIndex][statusIndex] = 0;
-                }
+            const chartData: ChartData[] = this.data.map(rangeData => {
+                return {
+                    label: textService.formatDate(rangeData.time, this.groupingType),
+                    statuses: dataService.getStatusMapping(rangeData.data),
+                };
             });
-        }
+            this.drawChart(chartData);
+        },
 
-        // Update with zeroes
-        for (let datasetIndex = 0; datasetIndex < this.chart.data.datasets.length; datasetIndex++) {
-            this.chart.data.datasets[datasetIndex].data.length = statusDatas[datasetIndex].length;
-            for (let dataIndex = 0; dataIndex < status.length; dataIndex++) {
-                if (!this.chart.data.datasets[datasetIndex].data[dataIndex]) {
-                    this.chart.data.datasets[datasetIndex].data[dataIndex] = 0;
+        drawChart(chartData: ChartData[]): void {
+            const statuses = chartData.map(v => this.groupByStatusType(v));
+            const labels: string[] = chartData.map(v => v.label);
+
+            if (!this.chart) {
+                this.chart = markRaw(this.createChart());
+            }
+
+            this.chart.data.labels.length = 0;
+            for (const label of labels) {
+                this.chart.data.labels.push(label);
+            }
+
+            // Prepare data
+            const statusDatas: number[][] = [];
+            for (let datasetIndex = 0; datasetIndex < this.chart.data.datasets.length; datasetIndex++) {
+                statusDatas.push([]);
+                statuses.forEach((statusData, statusIndex) => {
+                    const total = statusData.reduce((acc, [, hits]) => {
+                        return acc + hits;
+                    }, 0);
+                    const statusString = this.toStatusString((datasetIndex + 1).toString());
+                    const element = statusData.find(v => v[0] === statusString);
+                    if (element) {
+                        statusDatas[datasetIndex][statusIndex] = element[1] / total;
+                    } else {
+                        statusDatas[datasetIndex][statusIndex] = 0;
+                    }
+                });
+            }
+
+            // Update with zeroes
+            for (let datasetIndex = 0; datasetIndex < this.chart.data.datasets.length; datasetIndex++) {
+                this.chart.data.datasets[datasetIndex].data.length = statusDatas[datasetIndex].length;
+                for (let dataIndex = 0; dataIndex < statusDatas[datasetIndex].length; dataIndex++) {
+                    if (!this.chart.data.datasets[datasetIndex].data[dataIndex]) {
+                        this.chart.data.datasets[datasetIndex].data[dataIndex] = 0;
+                    }
                 }
             }
-        }
-        this.chart.update({duration: 0});
+            this.chart.update('none');
 
-        // Update with real values and animate
-        for (let datasetIndex = 0; datasetIndex < this.chart.data.datasets.length; datasetIndex++) {
-            statusDatas[datasetIndex].forEach((value, statusIndex) => {
-                this.chart.data.datasets[datasetIndex].data[statusIndex] = value;
-            });
-        }
-        this.chart.update({duration: ChartAnimation.Duration});
-    }
-
-    private groupByStatusType(chartData: ChartData): Array<[string, number]> {
-        return Object.entries(chartData.statuses)
-            .reduce((acc, [status, uriMap]) => {
-                let element = acc.find(([statusString, hits]) => {
-                    return this.toStatusString(status) === statusString;
+            // Update with real values and animate
+            for (let datasetIndex = 0; datasetIndex < this.chart.data.datasets.length; datasetIndex++) {
+                statusDatas[datasetIndex].forEach((value, statusIndex) => {
+                    this.chart.data.datasets[datasetIndex].data[statusIndex] = value;
                 });
-                if (!element) {
-                    element = [this.toStatusString(status), 0];
-                    acc.push(element);
-                }
-                element[1] += this.getTotal(uriMap);
-                return acc.sort((a, b) => a[0] < b[0] ? -1 : 1);
-            }, []);
-    }
+            }
+            this.chart.update();
+        },
 
-    private getTotal(uriMap: Dictionary<number>): number {
-        return Object.entries(uriMap)
-            .reduce((acc, [uri, hits]) => {
-                return acc + hits;
-            }, 0);
-    }
+        groupByStatusType(chartData: ChartData): Array<[string, number]> {
+            return Object.entries(chartData.statuses)
+                .reduce<Array<[string, number]>>((acc, [status, uriMap]) => {
+                    let element = acc.find(([statusString]) => {
+                        return this.toStatusString(status) === statusString;
+                    });
+                    if (!element) {
+                        element = [this.toStatusString(status), 0];
+                        acc.push(element);
+                    }
+                    element[1] += this.getTotal(uriMap);
+                    return acc.sort((a, b) => a[0] < b[0] ? -1 : 1);
+                }, []);
+        },
 
-    private toStatusString(status: string): string {
-        return status[0] + 'xx';
-    }
+        getTotal(uriMap: Dictionary<number>): number {
+            return Object.entries(uriMap)
+                .reduce((acc, [, hits]) => {
+                    return acc + hits;
+                }, 0);
+        },
 
-    private createChart(): Chart {
-        return new Chart('status-codes-chart', {
-            type: 'bar',
-            data: {
-                labels: ['a'],
-                datasets: [
-                    this.createDataset('1xx', ChartColors.Blue),
-                    this.createDataset('2xx', ChartColors.Green),
-                    this.createDataset('3xx', ChartColors.Violet),
-                    this.createDataset('4xx', ChartColors.Orange),
-                    this.createDataset('5xx', ChartColors.Red),
-                ],
-            },
-            options: {
-                maintainAspectRatio: false,
-                scales: {
-                    xAxes: [{
-                        ticks: {
-                            display: false,
+        toStatusString(status: string): string {
+            return status[0] + 'xx';
+        },
+
+        createChart(): BarChart {
+            return new Chart<'bar', number[], string>(this.$refs.canvas as HTMLCanvasElement, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [
+                        this.createDataset('1xx', ChartColors.Blue),
+                        this.createDataset('2xx', ChartColors.Green),
+                        this.createDataset('3xx', ChartColors.Violet),
+                        this.createDataset('4xx', ChartColors.Orange),
+                        this.createDataset('5xx', ChartColors.Red),
+                    ],
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: ChartAnimation.Duration,
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                display: false,
+                            },
+                            grid: {
+                                display: false,
+                            },
+                            stacked: true,
                         },
-                        gridLines: {
-                            display: false,
-                        },
-                        stacked: true,
-                    }],
-                    yAxes: [{
-                        ticks: {
+                        y: {
                             min: 0,
                             max: 1,
-                            maxTicksLimit: 5,
-                            callback: (value, index, values) => {
-                                return Math.round(value as number * 100) + '%';
+                            ticks: {
+                                maxTicksLimit: 5,
+                                callback: value => {
+                                    return Math.round(Number(value) * 100) + '%';
+                                },
                             },
-                        },
-                        stacked: true,
-                    }],
-                },
-                legend: {
-                    display: false,
-                },
-                tooltips: {
-                    mode: 'index',
-                    callbacks: {
-                        label: (tooltipItem, data) => {
-                            const label = data.datasets[tooltipItem.datasetIndex].label;
-                            const percent = Math.round(tooltipItem.yLabel as number * 100);
-                            return `${label}: ${percent}%`;
+                            stacked: true,
                         },
                     },
+                    plugins: {
+                        legend: {
+                            display: false,
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            callbacks: {
+                                label: context => {
+                                    const label = context.dataset.label;
+                                    const percent = Math.round(context.parsed.y * 100);
+                                    return `${label}: ${percent}%`;
+                                },
+                            },
+                        },
+                    },
+                    onClick: (_event, elements) => {
+                        const index = elements.length > 0 ? elements[0].index : null;
+                        this.$emit('select-data', index);
+                    },
                 },
-                onClick: evt => {
-                    const element = this.chart.getElementAtEvent(evt) as any[];
-                    const index = element && element.length > 0 ? element[0]._index : null;
-                    this.$emit('select-data', index);
-                },
-            },
-        });
-    }
+            });
+        },
 
-    private createDataset(label: string, color: string) {
-        return {
-            label: label,
-            data: [],
-            backgroundColor: color,
-            pointBackgroundColor: color,
-            borderColor: color,
-            borderWidth: 2,
-            barPercentage: 1,
-            categoryPercentage: 0.9,
-        };
-    }
-}
+        createDataset(label: string, color: string) {
+            return {
+                label: label,
+                data: [] as number[],
+                backgroundColor: color,
+                pointBackgroundColor: color,
+                borderColor: color,
+                borderWidth: 2,
+                barPercentage: 1,
+                categoryPercentage: 0.9,
+            };
+        },
+    },
+});

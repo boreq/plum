@@ -1,7 +1,7 @@
 <template>
     <div class="table">
         <div class="thead" v-if="header">
-            <div class="th" v-for="(column, index) in header.columns" :style="getColumnStyle(index)">
+            <div class="th" v-for="(column, index) in header.columns" :key="index" :style="getColumnStyle(index)">
                 {{ column.label }}
             </div>
         </div>
@@ -9,8 +9,8 @@
             no data
         </div>
         <div class="tbody" v-if="dataPresent">
-            <div class="tr" v-for="(row, rowIndex) in limitedRows" v-on:click="click(rowIndex)" v-bind:class="{clickable: clickable}">
-                <div class="td" v-for="(value, columnIndex) in row.data" :style="getColumnStyle(columnIndex)" :title="value">
+            <div class="tr" v-for="(row, rowIndex) in limitedRows" :key="rowIndex" v-on:click="click(rowIndex)" v-bind:class="{clickable: clickable}">
+                <div class="td" v-for="(value, columnIndex) in row.data" :key="columnIndex" :style="getColumnStyle(columnIndex)" :title="value">
                     {{ value }}
                 </div>
                 <div class="background" :style="getBackgroundStyle(rowIndex)"></div>

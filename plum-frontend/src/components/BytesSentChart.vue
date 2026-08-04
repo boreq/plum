@@ -1,6 +1,6 @@
 <template>
     <div>
-        <canvas id="bytes-sent-chart"></canvas>
+        <canvas ref="canvas"></canvas>
     </div>
 </template>
 <script lang="ts" src="./BytesSentChart.ts"></script>

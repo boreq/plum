@@ -1,11 +1,11 @@
-import { Component, Prop, Vue, Watch } from 'vue-property-decorator';
-import { RangeData } from '@/dto/Data';
+import { defineComponent, markRaw, type PropType } from 'vue';
+import type { RangeData } from '@/dto/Data';
 import { ChartColors } from '@/dto/ChartColors';
 import { DataService } from '@/services/DataService';
 import { TextService } from '@/services/TextService';
 import { GroupingType } from '@/dto/GroupingType';
 import { ChartAnimation } from '@/dto/ChartAnimation';
-import Chart from 'chart.js';
+import { Chart } from '@/chartjs';
 
 class ChartData {
     label: string;
@@ -13,148 +13,176 @@ class ChartData {
     visits: number;
 }
 
-@Component
-export default class HitsAndVisits extends Vue {
+type BarChart = Chart<'bar', number[], string>;
 
-    @Prop()
-    private data: RangeData[];
+const textService = new TextService();
+const dataService = new DataService();
 
-    @Prop()
-    private groupingType: GroupingType;
+export default defineComponent({
+    name: 'HitsAndVisits',
 
-    private chart: Chart;
+    props: {
+        data: {
+            type: Array as PropType<RangeData[]>,
+            default: () => [],
+        },
+        groupingType: {
+            type: Number as PropType<GroupingType>,
+            default: GroupingType.Hourly,
+        },
+    },
 
-    private textService = new TextService();
-    private dataService = new DataService();
+    emits: ['select-data'],
 
-    @Watch('data')
-    onRangeDataChanged(value: RangeData[], oldValue: RangeData[]) {
-        this.redraw();
-    }
+    data() {
+        return {
+            chart: null as BarChart,
+        };
+    },
+
+    watch: {
+        data(): void {
+            this.redraw();
+        },
+    },
 
     mounted(): void {
         this.redraw();
-    }
+    },
 
-    private redraw(): void {
-        if (!this.data) {
-            return;
+    beforeUnmount(): void {
+        if (this.chart) {
+            this.chart.destroy();
+            this.chart = null;
         }
+    },
 
-        const chartData: ChartData[] = this.data
-            .map(rangeData => {
-                return {
-                    label: this.textService.formatDate(rangeData.time, this.groupingType),
-                    hits: this.dataService.getHits(rangeData.data),
-                    visits: this.dataService.getVisits(rangeData.data),
-                };
+    methods: {
+        redraw(): void {
+            if (!this.data) {
+                return;
+            }
+
+            const chartData: ChartData[] = this.data
+                .map(rangeData => {
+                    return {
+                        label: textService.formatDate(rangeData.time, this.groupingType),
+                        hits: dataService.getHits(rangeData.data),
+                        visits: dataService.getVisits(rangeData.data),
+                    };
+                });
+            this.drawChart(chartData);
+        },
+
+        drawChart(chartData: ChartData[]): void {
+            const visits: number[] = chartData.map(v => v.visits);
+            const hits: number[] = chartData.map(v => v.hits);
+            const labels: string[] = chartData.map(v => v.label);
+
+            if (!this.chart) {
+                this.chart = markRaw(this.createChart());
+            }
+
+            this.chart.data.labels.length = 0;
+            for (const label of labels) {
+                this.chart.data.labels.push(label);
+            }
+
+            // Update with zeroes
+            this.chart.data.datasets[0].data.length = visits.length;
+            visits.forEach((value, index) => {
+                if (!this.chart.data.datasets[0].data[index]) {
+                    this.chart.data.datasets[0].data[index] = 0;
+                }
             });
-        this.drawChart(chartData);
-    }
 
-    private drawChart(chartData: ChartData[]): void {
-        const visits: number[] = chartData.map(v => v.visits);
-        const hits: number[] = chartData.map(v => v.hits);
-        const labels: string[] = chartData.map(v => v.label);
+            this.chart.data.datasets[1].data.length = hits.length;
+            hits.forEach((value, index) => {
+                if (!this.chart.data.datasets[1].data[index]) {
+                    this.chart.data.datasets[1].data[index] = 0;
+                }
+            });
 
-        if (!this.chart) {
-            this.chart = this.createChart();
-        }
+            this.chart.update('none');
 
-        this.chart.data.labels.length = 0;
-        for (const label of labels) {
-            this.chart.data.labels.push(label);
-        }
+            // Update with real values and animate
+            visits.forEach((value, index) => {
+                this.chart.data.datasets[0].data[index] = value;
+            });
 
-        // Update with zeroes
-        this.chart.data.datasets[0].data.length = visits.length;
-        visits.forEach((value, index) => {
-            if (!this.chart.data.datasets[0].data[index]) {
-                this.chart.data.datasets[0].data[index] = 0;
-            }
-        });
+            hits.forEach((value, index) => {
+                this.chart.data.datasets[1].data[index] = value;
+            });
 
-        this.chart.data.datasets[1].data.length = hits.length;
-        hits.forEach((value, index) => {
-            if (!this.chart.data.datasets[1].data[index]) {
-                this.chart.data.datasets[1].data[index] = 0;
-            }
-        });
+            this.chart.update();
+        },
 
-        this.chart.update({duration: 0});
-
-        // Update with real values and animate
-        visits.forEach((value, index) => {
-            this.chart.data.datasets[0].data[index] = value;
-        });
-
-        hits.forEach((value, index) => {
-            this.chart.data.datasets[1].data[index] = value;
-        });
-
-        this.chart.update({duration: ChartAnimation.Duration});
-    }
-
-    private createChart(): Chart {
-        return new Chart('chart', {
-            type: 'bar',
-            data: {
-                labels: ['a'],
-                datasets: [
-                    this.createDataset('Visits', ChartColors.Primary),
-                    this.createDataset('Hits', ChartColors.Secondary),
-                ],
-            },
-            options: {
-                maintainAspectRatio: false,
-                scales: {
-                    xAxes: [{
-                        ticks: {
-                            display: false,
-                        },
-                        gridLines: {
-                            display: false,
-                        },
-                        stacked: true,
-                    }],
-                    yAxes: [{
-                        ticks: {
-                            beginAtZero: true,
-                            maxTicksLimit: 5,
-                            callback: (value , index, values) => {
-                                if (value as number >= 10000) {
-                                    return value as number / 1000 + 'k';
-                                }
-                                return value;
+        createChart(): BarChart {
+            return new Chart<'bar', number[], string>(this.$refs.canvas as HTMLCanvasElement, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [
+                        this.createDataset('Visits', ChartColors.Primary),
+                        this.createDataset('Hits', ChartColors.Secondary),
+                    ],
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: ChartAnimation.Duration,
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                display: false,
                             },
+                            grid: {
+                                display: false,
+                            },
+                            stacked: true,
                         },
-                        stacked: false,
-                    }],
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                maxTicksLimit: 5,
+                                callback: value => {
+                                    const n = Number(value);
+                                    if (n >= 10000) {
+                                        return n / 1000 + 'k';
+                                    }
+                                    return value;
+                                },
+                            },
+                            stacked: false,
+                        },
+                    },
+                    plugins: {
+                        legend: {
+                            display: false,
+                        },
+                        tooltip: {
+                            mode: 'index',
+                        },
+                    },
+                    onClick: (_event, elements) => {
+                        const index = elements.length > 0 ? elements[0].index : null;
+                        this.$emit('select-data', index);
+                    },
                 },
-                legend: {
-                    display: false,
-                },
-                tooltips: {
-                    mode: 'index',
-                },
-                onClick: evt => {
-                    const element = this.chart.getElementAtEvent(evt) as any[];
-                    const index = element && element.length > 0 ? element[0]._index : null;
-                    this.$emit('select-data', index);
-                },
-            },
-        });
-    }
+            });
+        },
 
-    private createDataset(label: string, color: string) {
-        return {
-            label: label,
-            data: [],
-            backgroundColor: color,
-            borderColor: color,
-            borderWidth: 1,
-            barPercentage: 1,
-            categoryPercentage: 0.9,
-        };
-    }
-}
+        createDataset(label: string, color: string) {
+            return {
+                label: label,
+                data: [] as number[],
+                backgroundColor: color,
+                borderColor: color,
+                borderWidth: 1,
+                barPercentage: 1,
+                categoryPercentage: 0.9,
+            };
+        },
+    },
+});

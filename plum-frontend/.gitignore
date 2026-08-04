@@ -2,6 +2,15 @@
 node_modules
 /dist
 
+# Yarn (node-modules linker, global cache)
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+
 # local env files
 .env.local
 .env.*.local

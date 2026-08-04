@@ -1,6 +1,6 @@
 <template>
     <div>
-        <canvas id="status-codes-chart"></canvas>
+        <canvas ref="canvas"></canvas>
     </div>
 </template>
 <script lang="ts" src="./StatusCodesChart.ts"></script>

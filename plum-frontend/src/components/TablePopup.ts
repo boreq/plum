@@ -1,28 +1,38 @@
-import { Component, Prop, Vue } from 'vue-property-decorator';
-import { TableHeader, TableRow } from '@/dto/Table';
+import { defineComponent, type PropType } from 'vue';
+import type { TableHeader, TableRow } from '@/dto/Table';
 import Table from '@/components/Table.vue';
 
-@Component({
+export default defineComponent({
+    name: 'TablePopup',
+
     components: {
         Table,
     },
-})
-export default class TablePopup extends Vue {
 
-    @Prop()
-    title: string;
+    props: {
+        title: {
+            type: String,
+            default: '',
+        },
+        header: {
+            type: Object as PropType<TableHeader>,
+            default: null,
+        },
+        rows: {
+            type: Array as PropType<TableRow[]>,
+            default: () => [],
+        },
+        perPage: {
+            type: Number,
+            default: 10,
+        },
+    },
 
-    @Prop()
-    header: TableHeader;
+    emits: ['close'],
 
-    @Prop()
-    rows: TableRow[];
-
-    @Prop({default: 10})
-    perPage: number;
-
-    close(): void {
-        this.$emit('close');
-    }
-
-}
+    methods: {
+        close(): void {
+            this.$emit('close');
+        },
+    },
+});

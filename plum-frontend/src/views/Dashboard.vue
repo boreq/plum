@@ -35,7 +35,7 @@
 
           <div class="box box-dimmed">
               <ul>
-                  <li v-for="website of websites">
+                  <li v-for="website of websites" :key="website">
                       <a v-bind:class="{ active: website === selectedWebsite }"
                          v-on:click="selectWebsite(website)">
                           {{ website }}
