@@ -1,7 +1,9 @@
 .summary {
-    .metric {
-        margin-bottom: 30px;
+    display: flex;
+    flex-flow: row;
+    justify-content: space-between;
 
+    .metric {
         .label {
             color: $box-inversed-text-dimmed-color;
             font-size: 12px;
@@ -12,20 +14,6 @@
             color: $box-inversed-text-color;
             font-size: 60px;
             font-weight: 300;
-        }
-    }
-}
-
-@media (max-width: $media-threshold-1) {
-    .summary {
-        display: flex;
-        flex-flow: row;
-        justify-content: space-between;
-
-        .metric {
-            margin-bottom: 0;
-
-
         }
     }
 }
