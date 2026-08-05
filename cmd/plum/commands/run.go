@@ -79,6 +79,8 @@ func runRun(c guinea.Context) error {
 		}
 	}
 
+	go removeOldData(repositories)
+
 	go func() {
 		errC <- server.Serve(repositories, conf.ServeAddress)
 	}()
@@ -105,6 +107,13 @@ func printStats(websiteName string, tracker *core.Tracker) {
 		linesPerSecond := float64(lines-lastLines) / duration.Seconds()
 		log.Debug("data statistics", "totalLines", lines, "linesPerSecond", linesPerSecond, "website", websiteName)
 		lastLines = lines
+	}
+}
+
+func removeOldData(repositories *core.Repositories) {
+	duration := time.Hour
+	for range time.Tick(duration) {
+		repositories.RemoveOldData(time.Now())
 	}
 }
 

@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"time"
 )
 
 type RepositoriesEntry struct {
@@ -41,6 +42,14 @@ func (r *Repositories) Get(name string) (*Repository, bool) {
 	}
 
 	return nil, false
+}
+
+// RemoveOldData discards the data which is older than the retention period in
+// all repositories.
+func (r *Repositories) RemoveOldData(now time.Time) {
+	for _, entry := range r.repositories {
+		entry.Repository.RemoveOldData(now)
+	}
 }
 
 func (r *Repositories) Names() []string {

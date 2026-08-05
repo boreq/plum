@@ -17,6 +17,11 @@ const entryKeyFormat = "2006-01-02 15"
 // identical visits from different days from getting merged.
 const visitPrefixFormat = "2006-01-02"
 
+// RetentionPeriod specifies how old the stored data is allowed to be. Older
+// entries are not inserted and the data which becomes too old is eventually
+// discarded by RemoveOldData.
+const RetentionPeriod = 365 * 24 * time.Hour
+
 type Repository struct {
 	data      map[string]*Data
 	dataMutex sync.Mutex
@@ -36,6 +41,10 @@ func NewRepository(conf config.Website) *Repository {
 func (r *Repository) Insert(entry *parser.Entry) error {
 	r.dataMutex.Lock()
 	defer r.dataMutex.Unlock()
+
+	if entry.Time.Before(retentionCutoff(time.Now())) {
+		return nil
+	}
 
 	r.normalize(entry)
 
@@ -93,6 +102,30 @@ func (r *Repository) RetrieveMonth(year int, month time.Month, filter Filter) (*
 		}
 	}
 	return target, true
+}
+
+// RemoveOldData discards the data which is older than the retention period.
+func (r *Repository) RemoveOldData(now time.Time) {
+	r.dataMutex.Lock()
+	defer r.dataMutex.Unlock()
+
+	cutoff := retentionCutoff(now)
+
+	for key := range r.data {
+		t, err := time.ParseInLocation(entryKeyFormat, key, time.UTC)
+		if err != nil {
+			r.log.Error("could not parse a key", "err", err, "key", key)
+			continue
+		}
+
+		if t.Before(cutoff) {
+			delete(r.data, key)
+		}
+	}
+}
+
+func retentionCutoff(now time.Time) time.Time {
+	return now.UTC().Add(-RetentionPeriod)
 }
 
 func (r *Repository) createKey(date time.Time) string {

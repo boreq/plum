@@ -8,7 +8,9 @@ import (
 	"github.com/boreq/plum/parser"
 )
 
-var entryTime = time.Date(2019, time.February, 28, 13, 30, 0, 0, time.UTC)
+// Entries which are older than the retention period are not inserted at all so
+// this has to be a recent point in time.
+var entryTime = time.Now().UTC().Add(-time.Hour)
 
 func testEntry(remoteAddress, uri, status, referer string, bytes int) *parser.Entry {
 	return &parser.Entry{
