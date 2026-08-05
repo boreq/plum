@@ -1,8 +1,9 @@
-package server
+package http
 
 import (
 	"time"
 
+	"github.com/boreq/plum/app"
 	"github.com/boreq/plum/core"
 )
 
@@ -24,11 +25,19 @@ type Metrics struct {
 	BodyBytesSent int `json:"bytes"`
 }
 
-func NewRangeData(t time.Time, summary *core.Summary) RangeData {
+func NewRangeData(rangeData app.RangeData) RangeData {
 	return RangeData{
-		Time: t,
-		Data: newData(summary),
+		Time: rangeData.Time,
+		Data: newData(rangeData.Data),
 	}
+}
+
+func NewRangeDataSlice(rangeData []app.RangeData) []RangeData {
+	rv := make([]RangeData, 0, len(rangeData))
+	for _, v := range rangeData {
+		rv = append(rv, NewRangeData(v))
+	}
+	return rv
 }
 
 func newData(summary *core.Summary) Data {

@@ -2,19 +2,23 @@ package commands
 
 import (
 	"encoding/json"
-	"github.com/pkg/errors"
+	"github.com/boreq/errors"
 	"os"
 	"path/filepath"
 	"runtime"
 	"time"
 
 	"github.com/boreq/guinea"
+	"github.com/boreq/plum/app"
 	"github.com/boreq/plum/config"
 	"github.com/boreq/plum/core"
+	"github.com/boreq/plum/entrypoints/http"
+	"github.com/boreq/plum/entrypoints/timers"
 	"github.com/boreq/plum/parser"
-	"github.com/boreq/plum/server"
 	"github.com/dustin/go-humanize"
 )
+
+const removeOldDataEvery = time.Hour
 
 var runCmd = guinea.Command{
 	Run: runRun,
@@ -79,10 +83,23 @@ func runRun(c guinea.Context) error {
 		}
 	}
 
-	go removeOldData(repositories)
+	application := app.New(repositories)
+
+	removeOldData := timers.NewRemoveOldData(application.RemoveOldData, removeOldDataEvery)
 
 	go func() {
-		errC <- server.Serve(repositories, conf.ServeAddress)
+		errC <- removeOldData.Run()
+	}()
+
+	handler, err := http.NewHandler(application)
+	if err != nil {
+		return errors.Wrap(err, "could not create the http handler")
+	}
+
+	server := http.NewServer(handler)
+
+	go func() {
+		errC <- server.Serve(conf.ServeAddress)
 	}()
 
 	return <-errC
@@ -107,13 +124,6 @@ func printStats(websiteName string, tracker *core.Tracker) {
 		linesPerSecond := float64(lines-lastLines) / duration.Seconds()
 		log.Debug("data statistics", "totalLines", lines, "linesPerSecond", linesPerSecond, "website", websiteName)
 		lastLines = lines
-	}
-}
-
-func removeOldData(repositories *core.Repositories) {
-	duration := time.Hour
-	for range time.Tick(duration) {
-		repositories.RemoveOldData(time.Now())
 	}
 }
 

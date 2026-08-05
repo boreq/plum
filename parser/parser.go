@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boreq/errors"
 	"github.com/boreq/plum/logging"
 	"github.com/boreq/plum/parser/format"
-	"github.com/pkg/errors"
 )
 
 var log = logging.New("parser")

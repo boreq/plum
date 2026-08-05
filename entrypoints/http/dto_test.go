@@ -1,4 +1,4 @@
-package server
+package http
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boreq/plum/app"
 	"github.com/boreq/plum/config"
 	"github.com/boreq/plum/core"
 	"github.com/boreq/plum/parser"
@@ -59,7 +60,10 @@ func TestNewRangeDataJSON(t *testing.T) {
 		t.Fatal("retrieve failed")
 	}
 
-	j, err := json.Marshal(NewRangeData(entryTime.Truncate(time.Hour), data))
+	j, err := json.Marshal(NewRangeData(app.RangeData{
+		Time: entryTime.Truncate(time.Hour),
+		Data: data,
+	}))
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}

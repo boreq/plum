@@ -1,7 +1,7 @@
 // Package config holds the configuration struct.
 package config
 
-import "github.com/pkg/errors"
+import "github.com/boreq/errors"
 
 type Config struct {
 	// HTTP server address eg. "127.0.0.1:8118".
@@ -17,7 +17,7 @@ func (c Config) Valid() error {
 	}
 
 	for _, website := range c.Websites {
-		if err:= website.Valid(); err != nil {
+		if err := website.Valid(); err != nil {
 			return errors.Wrap(err, "website definition invalid")
 		}
 	}
@@ -61,7 +61,7 @@ func (w Website) Valid() error {
 		return errors.New("blank follow path")
 	}
 
-	for _,load :=  range w.Load {
+	for _, load := range w.Load {
 		if load == "" {
 			return errors.New("blank load path")
 		}
