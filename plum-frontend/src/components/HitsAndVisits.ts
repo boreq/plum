@@ -174,8 +174,7 @@ export default defineComponent({
                 label: label,
                 data: [] as number[],
                 backgroundColor: color,
-                borderColor: color,
-                borderWidth: 1,
+                borderWidth: 0,
                 barPercentage: 1,
                 categoryPercentage: 0.9,
             };
