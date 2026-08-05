@@ -75,6 +75,24 @@ export default defineComponent({
                     };
                 });
         },
+
+        // Changes whenever a different set of data is loaded. Used as a key so
+        // that the tables are recreated and their pagination is reset instead
+        // of displaying a page which makes no sense for the new data. Periodic
+        // reloads of the latest data point don't affect this value so that they
+        // don't interrupt the user.
+        tableKey(): string {
+            const filter = Object.values(FilterDimension)
+                .map(dimension => `${dimension}=${this.filter[dimension] || ''}`)
+                .join('&');
+            return [
+                this.selectedWebsite,
+                this.selectedTimePeriod,
+                this.selectedGroupingType,
+                this.selectedRangeData ? this.selectedRangeData.time : '',
+                filter,
+            ].join('|');
+        },
     },
 
     created(): void {

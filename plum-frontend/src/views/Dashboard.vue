@@ -69,22 +69,22 @@
               <HitsAndVisits :data="data" :groupingType="selectedGroupingType" v-on:select-data="selectData($event)"></HitsAndVisits>
           </div>
           <div class="box box-normal pages">
-              <Pages :data="data" v-on:filter="addFilter"></Pages>
+              <Pages :key="tableKey" :data="data" v-on:filter="addFilter"></Pages>
           </div>
           <div class="box box-normal referers">
-              <Referers :data="data" v-on:filter="addFilter"></Referers>
+              <Referers :key="tableKey" :data="data" v-on:filter="addFilter"></Referers>
           </div>
           <div class="box box-normal bytes-sent-chart">
               <BytesSentChart :data="data" :groupingType="selectedGroupingType" v-on:select-data="selectData($event)"></BytesSentChart>
           </div>
           <div class="box box-normal bytes-sent">
-              <BytesSent :data="data" v-on:filter="addFilter"></BytesSent>
+              <BytesSent :key="tableKey" :data="data" v-on:filter="addFilter"></BytesSent>
           </div>
           <div class="box box-normal status-codes-chart">
               <StatusCodesChart :data="data" :groupingType="selectedGroupingType" v-on:select-data="selectData($event)"></StatusCodesChart>
           </div>
           <div class="box box-normal status-codes">
-              <StatusCodes :data="data" v-on:filter="addFilter"></StatusCodes>
+              <StatusCodes :key="tableKey" :data="data" v-on:filter="addFilter"></StatusCodes>
           </div>
       </div>
   </div>
