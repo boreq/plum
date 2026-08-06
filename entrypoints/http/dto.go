@@ -18,6 +18,7 @@ type Data struct {
 	Uris       map[string]Metrics `json:"uris"`
 	Statuses   map[string]Metrics `json:"statuses"`
 	Referers   map[string]Metrics `json:"referers"`
+	UserAgents map[string]Metrics `json:"userAgents"`
 }
 
 type Metrics struct {
@@ -48,6 +49,7 @@ func newData(summary *core.Summary) Data {
 		Uris:       newMetricsMap(summary.Uris),
 		Statuses:   newMetricsMap(summary.Statuses),
 		Referers:   newMetricsMap(summary.Referers),
+		UserAgents: newMetricsMap(summary.UserAgents),
 	}
 }
 

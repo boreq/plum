@@ -238,10 +238,11 @@ func getFilter(r *http.Request) (core.Filter, error) {
 	}
 
 	return core.Filter{
-		Category: category,
-		Uri:      q.Get("uri"),
-		Status:   q.Get("status"),
-		Referer:  q.Get("referer"),
+		Category:  category,
+		Uri:       q.Get("uri"),
+		Status:    q.Get("status"),
+		Referer:   q.Get("referer"),
+		UserAgent: q.Get("userAgent"),
 	}, nil
 }
 

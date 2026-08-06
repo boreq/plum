@@ -194,10 +194,16 @@ func mergeData(target *Summary, source *Data, visitPrefix string, filter Filter)
 						continue
 					}
 
-					target.InsertCategoryLeaf(category, refererData.Metrics, visitPrefix)
+					for userAgent, userAgentData := range refererData.UserAgents {
+						if !filter.MatchesUserAgent(userAgent) {
+							continue
+						}
 
-					if categoryMatches {
-						target.InsertLeaf(uri, status, referer, refererData.Metrics, visitPrefix)
+						target.InsertCategoryLeaf(category, userAgentData.Metrics, visitPrefix)
+
+						if categoryMatches {
+							target.InsertLeaf(uri, status, referer, userAgent, userAgentData.Metrics, visitPrefix)
+						}
 					}
 				}
 			}

@@ -1,10 +1,15 @@
 package core
 
 type Filter struct {
-	Category Category
-	Uri      string
-	Status   string
-	Referer  string
+	Category  Category
+	Uri       string
+	Status    string
+	Referer   string
+	UserAgent string
+}
+
+func (f Filter) MatchesUserAgent(userAgent string) bool {
+	return f.UserAgent == "" || f.UserAgent == userAgent
 }
 
 func (f Filter) MatchesCategory(category Category) bool {

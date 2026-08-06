@@ -85,6 +85,9 @@
           <div class="box box-normal referers">
               <Referers :key="tableKey" :data="data" v-on:filter="addFilter"></Referers>
           </div>
+          <div class="box box-normal user-agents">
+              <UserAgents :key="tableKey" :data="data" v-on:filter="addFilter"></UserAgents>
+          </div>
           <div class="box box-normal bytes-sent-chart">
               <BytesSentChart :data="data" :groupingType="selectedGroupingType" v-on:select-data="selectData($event)"></BytesSentChart>
           </div>

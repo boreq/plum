@@ -13,6 +13,7 @@ export interface Data extends Metrics {
     uris: Dictionary<Metrics>;
     statuses: Dictionary<Metrics>;
     referers: Dictionary<Metrics>;
+    userAgents: Dictionary<Metrics>;
 }
 
 export interface RangeData {

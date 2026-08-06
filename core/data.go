@@ -25,7 +25,8 @@ func (d *Data) Insert(entry *parser.Entry) error {
 	uriData := categoryData.getOrCreateUriData(entry.HttpRequestURI)
 	statusData := uriData.getOrCreateStatusData(entry.Status)
 	refererData := statusData.getOrCreateRefererData(entry.Referer)
-	refererData.Insert(visit, entry.BodyBytesSent)
+	userAgentData := refererData.getOrCreateUserAgentData(UserAgentName(entry.UserAgent))
+	userAgentData.Insert(visit, entry.BodyBytesSent)
 
 	return nil
 }
@@ -79,7 +80,7 @@ func (b *StatusData) getOrCreateRefererData(referer string) *RefererData {
 	refererData, ok := b.Referers[referer]
 	if !ok {
 		refererData = &RefererData{
-			Metrics: NewMetrics(),
+			UserAgents: make(map[string]*UserAgentData),
 		}
 		b.Referers[referer] = refererData
 	}
@@ -87,6 +88,21 @@ func (b *StatusData) getOrCreateRefererData(referer string) *RefererData {
 }
 
 type RefererData struct {
+	UserAgents map[string]*UserAgentData
+}
+
+func (b *RefererData) getOrCreateUserAgentData(userAgent string) *UserAgentData {
+	userAgentData, ok := b.UserAgents[userAgent]
+	if !ok {
+		userAgentData = &UserAgentData{
+			Metrics: NewMetrics(),
+		}
+		b.UserAgents[userAgent] = userAgentData
+	}
+	return userAgentData
+}
+
+type UserAgentData struct {
 	Metrics
 }
 

@@ -9,6 +9,7 @@ import CategoryTraffic from '@/components/CategoryTraffic.vue';
 import HitsAndVisits from '@/components/HitsAndVisits.vue';
 import Pages from '@/components/Pages.vue';
 import Referers from '@/components/Referers.vue';
+import UserAgents from '@/components/UserAgents.vue';
 import BytesSent from '@/components/BytesSent.vue';
 import BytesSentChart from '@/components/BytesSentChart.vue';
 import StatusCodesChart from '@/components/StatusCodesChart.vue';
@@ -30,6 +31,7 @@ export default defineComponent({
         HitsAndVisits,
         Pages,
         Referers,
+        UserAgents,
         BytesSent,
         BytesSentChart,
         StatusCodesChart,
@@ -176,6 +178,8 @@ export default defineComponent({
 
         selectWebsite(website: string): void {
             this.selectedWebsite = website;
+            this.filter = {};
+            this.selectedRangeData = null;
             this.reloadData();
         },
 

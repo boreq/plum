@@ -3,6 +3,7 @@ export enum FilterDimension {
     Uri = 'uri',
     Status = 'status',
     Referer = 'referer',
+    UserAgent = 'userAgent',
 }
 
 export type Filter = {
@@ -14,6 +15,7 @@ export const FilterLabels: { [dimension in FilterDimension]: string } = {
     [FilterDimension.Uri]: 'Page',
     [FilterDimension.Status]: 'Status',
     [FilterDimension.Referer]: 'Referer',
+    [FilterDimension.UserAgent]: 'User agent',
 };
 
 export function filtersEqual(a: Filter, b: Filter): boolean {
