@@ -15,7 +15,7 @@
                     Visits
                 </div>
                 <div class="value">
-                    {{ visits }}
+                    {{ visits }}<span class="share">{{ visitsShare }}</span>
                 </div>
             </div>
             <div class="metric">
@@ -23,7 +23,7 @@
                     Hits
                 </div>
                 <div class="value">
-                    {{ hits }}
+                    {{ hits }}<span class="share">{{ hitsShare }}</span>
                 </div>
             </div>
             <div class="metric">
@@ -31,7 +31,7 @@
                     Bytes sent
                 </div>
                 <div class="value">
-                    {{ bytesSent }}
+                    {{ bytesSent }}<span class="share">{{ bytesSentShare }}</span>
                 </div>
             </div>
         </div>

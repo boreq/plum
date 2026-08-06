@@ -37,6 +37,12 @@
                 color: $box-inversed-text-color;
                 font-size: 30px;
                 font-weight: 300;
+
+                .share {
+                    color: $box-inversed-text-dimmed-color;
+                    font-size: 18px;
+                    margin-left: .4em;
+                }
             }
         }
     }

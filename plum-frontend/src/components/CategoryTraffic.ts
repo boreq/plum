@@ -53,6 +53,18 @@ export default defineComponent({
         bytesSent(): string {
             return textService.humanizeBytes(this.total(v => v.bytes), 0);
         },
+
+        hitsShare(): string {
+            return this.share(v => v.hits);
+        },
+
+        visitsShare(): string {
+            return this.share(v => v.visits);
+        },
+
+        bytesSentShare(): string {
+            return this.share(v => v.bytes);
+        },
     },
 
     methods: {
@@ -62,6 +74,21 @@ export default defineComponent({
 
         metrics(data: Data): Metrics {
             return data.categories ? (data.categories[this.category] || emptyMetrics) : emptyMetrics;
+        },
+
+        share(selector: (metrics: Metrics) => number): string {
+            const total = metricsService.total(this.data, (data: Data) => this.allCategories(data, selector));
+            if (!total) {
+                return '0%';
+            }
+            return Math.round(100 * this.total(selector) / total) + '%';
+        },
+
+        allCategories(data: Data, selector: (metrics: Metrics) => number): number {
+            if (!data.categories) {
+                return 0;
+            }
+            return Object.values(data.categories).reduce((acc, metrics) => acc + selector(metrics), 0);
         },
 
         click(): void {
