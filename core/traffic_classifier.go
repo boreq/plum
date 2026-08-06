@@ -31,7 +31,12 @@ var automatedUserAgentNames = map[string]struct{}{
 	"ccbot":             {},
 	"python":            {},
 	"python-requests":   {},
+	"python-urllib":     {},
 	"go-http-client":    {},
+	"scrapy":            {},
+	"apache-httpclient": {},
+	"bun":               {},
+	"domaindrift":       {},
 
 	"mastodon":      {},
 	"misskey":       {},
@@ -54,6 +59,8 @@ var maliciousUserAgentNames = map[string]struct{}{
 var automatedUserAgentMarkers = []string{
 	"feed",
 	"rss",
+	"newsblur",
+	"palo alto networks",
 }
 
 var scanUris = map[string]struct{}{

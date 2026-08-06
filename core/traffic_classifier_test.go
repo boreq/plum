@@ -383,6 +383,34 @@ func TestClassifyUserAgentName(t *testing.T) {
 			Category:  CategoryAutomated,
 		},
 		{
+			UserAgent: "Scrapy/2.11.0 (+https://scrapy.org)",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "Apache-HttpClient/5.3 (Java/17.0.10)",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "Bun/1.1.29",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "DomainDrift/0.3 (Internet Telemetry; +https://domaindrift.io)",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "Python-urllib/3.11",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "Hello from Palo Alto Networks, find out more about our scans in https://docs-cortex.paloaltonetworks.com/r/1/Cortex-Xpanse/Scanning-activity",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "NewsBlur Page Fetcher - 2 subscribers - https://www.newsblur.com/site/7649476/thoughts",
+			Category:  CategoryAutomated,
+		},
+		{
 			UserAgent: "vuln_scanner/3.1.0 (CVE-2026-4020)",
 			Category:  CategoryMalicious,
 		},
