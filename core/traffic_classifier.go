@@ -28,6 +28,10 @@ var automatedUserAgentNames = map[string]struct{}{
 	"duckassistbot":     {},
 	"sogou web spider":  {},
 	"moooodotfarm":      {},
+	"ccbot":             {},
+	"python":            {},
+	"python-requests":   {},
+	"go-http-client":    {},
 
 	"mastodon":      {},
 	"misskey":       {},

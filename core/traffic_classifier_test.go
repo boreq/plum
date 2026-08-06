@@ -367,6 +367,22 @@ func TestClassifyUserAgentName(t *testing.T) {
 			Category:  CategoryAutomated,
 		},
 		{
+			UserAgent: "CCBot/2.0 (https://commoncrawl.org/faq/)",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "python-requests/2.32.3",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "Python/3.11 aiohttp/3.9.5",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "Go-http-client/2.0",
+			Category:  CategoryAutomated,
+		},
+		{
 			UserAgent: "vuln_scanner/3.1.0 (CVE-2026-4020)",
 			Category:  CategoryMalicious,
 		},
