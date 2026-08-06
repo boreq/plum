@@ -8,8 +8,8 @@ type Filter struct {
 	UserAgent string
 }
 
-func (f Filter) MatchesUserAgent(userAgent string) bool {
-	return f.UserAgent == "" || f.UserAgent == userAgent
+func (f Filter) MatchesUserAgent(userAgent UserAgent) bool {
+	return f.UserAgent == "" || f.UserAgent == userAgent.Name()
 }
 
 func (f Filter) MatchesCategory(category Category) bool {

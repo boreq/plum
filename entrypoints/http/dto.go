@@ -14,11 +14,16 @@ type RangeData struct {
 
 type Data struct {
 	Metrics
-	Categories map[string]Metrics `json:"categories"`
-	Uris       map[string]Metrics `json:"uris"`
-	Statuses   map[string]Metrics `json:"statuses"`
-	Referers   map[string]Metrics `json:"referers"`
-	UserAgents map[string]Metrics `json:"userAgents"`
+	Categories map[string]Metrics          `json:"categories"`
+	Uris       map[string]Metrics          `json:"uris"`
+	Statuses   map[string]Metrics          `json:"statuses"`
+	Referers   map[string]Metrics          `json:"referers"`
+	UserAgents map[string]UserAgentMetrics `json:"userAgents"`
+}
+
+type UserAgentMetrics struct {
+	Metrics
+	Browser string `json:"browser"`
 }
 
 type Metrics struct {
@@ -49,7 +54,7 @@ func newData(summary *core.Summary) Data {
 		Uris:       newMetricsMap(summary.Uris),
 		Statuses:   newMetricsMap(summary.Statuses),
 		Referers:   newMetricsMap(summary.Referers),
-		UserAgents: newMetricsMap(summary.UserAgents),
+		UserAgents: newUserAgentMetricsMap(summary.UserAgents),
 	}
 }
 
@@ -57,6 +62,22 @@ func newCategoryMetricsMap(source map[core.Category]*core.Metrics) map[string]Me
 	rv := make(map[string]Metrics, len(source))
 	for category, metrics := range source {
 		rv[category.String()] = newMetrics(metrics)
+	}
+	return rv
+}
+
+func newUserAgentMetricsMap(source map[core.UserAgent]*core.Metrics) map[string]UserAgentMetrics {
+	rv := make(map[string]UserAgentMetrics, len(source))
+	for userAgent, metrics := range source {
+		browser := ""
+		if userAgent.Browser() != nil {
+			browser = userAgent.Browser().String()
+		}
+
+		rv[userAgent.Name()] = UserAgentMetrics{
+			Metrics: newMetrics(metrics),
+			Browser: browser,
+		}
 	}
 	return rv
 }

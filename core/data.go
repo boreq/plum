@@ -24,7 +24,7 @@ func (d *Data) Insert(entry *parser.Entry, category Category) error {
 	uriData := categoryData.getOrCreateUriData(entry.HttpRequestURI)
 	statusData := uriData.getOrCreateStatusData(entry.Status)
 	refererData := statusData.getOrCreateRefererData(entry.Referer)
-	userAgentData := refererData.getOrCreateUserAgentData(UserAgentName(entry.UserAgent))
+	userAgentData := refererData.getOrCreateUserAgentData(NewUserAgent(entry.UserAgent))
 	userAgentData.Insert(visit, entry.BodyBytesSent)
 
 	return nil
@@ -79,7 +79,7 @@ func (b *StatusData) getOrCreateRefererData(referer string) *RefererData {
 	refererData, ok := b.Referers[referer]
 	if !ok {
 		refererData = &RefererData{
-			UserAgents: make(map[string]*UserAgentData),
+			UserAgents: make(map[UserAgent]*UserAgentData),
 		}
 		b.Referers[referer] = refererData
 	}
@@ -87,10 +87,10 @@ func (b *StatusData) getOrCreateRefererData(referer string) *RefererData {
 }
 
 type RefererData struct {
-	UserAgents map[string]*UserAgentData
+	UserAgents map[UserAgent]*UserAgentData
 }
 
-func (b *RefererData) getOrCreateUserAgentData(userAgent string) *UserAgentData {
+func (b *RefererData) getOrCreateUserAgentData(userAgent UserAgent) *UserAgentData {
 	userAgentData, ok := b.UserAgents[userAgent]
 	if !ok {
 		userAgentData = &UserAgentData{

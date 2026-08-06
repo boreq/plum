@@ -8,12 +8,16 @@ export interface Metrics {
     bytes: number;
 }
 
+export interface UserAgentMetrics extends Metrics {
+    browser: string;
+}
+
 export interface Data extends Metrics {
     categories: Dictionary<Metrics>;
     uris: Dictionary<Metrics>;
     statuses: Dictionary<Metrics>;
     referers: Dictionary<Metrics>;
-    userAgents: Dictionary<Metrics>;
+    userAgents: Dictionary<UserAgentMetrics>;
 }
 
 export interface RangeData {

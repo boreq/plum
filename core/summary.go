@@ -7,7 +7,7 @@ func NewSummary() *Summary {
 		Uris:       make(map[string]*Metrics),
 		Statuses:   make(map[string]*Metrics),
 		Referers:   make(map[string]*Metrics),
-		UserAgents: make(map[string]*Metrics),
+		UserAgents: make(map[UserAgent]*Metrics),
 	}
 	for _, category := range Categories {
 		getOrCreateMetrics(summary.Categories, category)
@@ -21,10 +21,10 @@ type Summary struct {
 	Uris       map[string]*Metrics
 	Statuses   map[string]*Metrics
 	Referers   map[string]*Metrics
-	UserAgents map[string]*Metrics
+	UserAgents map[UserAgent]*Metrics
 }
 
-func (s *Summary) InsertLeaf(uri, status, referer, userAgent string, metrics Metrics, visitPrefix string) {
+func (s *Summary) InsertLeaf(uri, status, referer string, userAgent UserAgent, metrics Metrics, visitPrefix string) {
 	s.Metrics.Add(metrics, visitPrefix)
 	getOrCreateMetrics(s.Uris, uri).Add(metrics, visitPrefix)
 	getOrCreateMetrics(s.Statuses, status).Add(metrics, visitPrefix)

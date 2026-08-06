@@ -11,7 +11,7 @@
         <div class="tbody" v-if="dataPresent">
             <div class="tr" v-for="(row, rowIndex) in limitedRows" :key="rowIndex" v-on:click="click(rowIndex)" v-bind:class="{clickable: clickable}">
                 <div class="td" v-for="(value, columnIndex) in row.data" :key="columnIndex" :style="getColumnStyle(columnIndex)" :title="value">
-                    {{ value }}
+                    {{ value }}<i v-if="columnIndex === 0 && row.icon" class="icon" :class="row.icon" :title="row.iconTitle"></i>
                 </div>
                 <div class="background" :style="getBackgroundStyle(rowIndex)"></div>
             </div>

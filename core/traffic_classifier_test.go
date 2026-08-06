@@ -261,74 +261,6 @@ func TestRemoveOldDataDiscardsAddresses(t *testing.T) {
 	}
 }
 
-func TestUserAgentName(t *testing.T) {
-	testCases := []struct {
-		UserAgent string
-		Name      string
-	}{
-		{
-			UserAgent: "curl/7.64.0",
-			Name:      "curl",
-		},
-		{
-			UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-			Name:      "Mozilla",
-		},
-		{
-			UserAgent: "moooodotfarm (+https://moooo.farm)",
-			Name:      "moooodotfarm",
-		},
-		{
-			UserAgent: "Turnitin (https://turnitin.com/robot/crawlerinfo.html)",
-			Name:      "Turnitin",
-		},
-		{
-			UserAgent: "OnlyRead",
-			Name:      "OnlyRead",
-		},
-		{
-			UserAgent: "python-requests/2.32.3",
-			Name:      "python-requests",
-		},
-		{
-			UserAgent: "Feedbin feed-id:1602368 - 4 subscribers",
-			Name:      "Feedbin feed-id:1602368 - 4 subscribers",
-		},
-		{
-			UserAgent: "http.rb/5.1.0",
-			Name:      "http.rb/5.1.0",
-		},
-		{
-			UserAgent: "com.apple.webkit.networking",
-			Name:      "com.apple.webkit.networking",
-		},
-		{
-			UserAgent: "vuln_scanner",
-			Name:      "vuln_scanner",
-		},
-		{
-			UserAgent: "vuln_scanner/3.1.0 (CVE-2026-4020)",
-			Name:      "vuln_scanner",
-		},
-		{
-			UserAgent: "crusader-worker/2.1",
-			Name:      "crusader-worker",
-		},
-		{
-			UserAgent: "",
-			Name:      "",
-		},
-	}
-
-	for _, testCase := range testCases {
-		t.Run(testCase.UserAgent, func(t *testing.T) {
-			if name := UserAgentName(testCase.UserAgent); name != testCase.Name {
-				t.Errorf("got %q, want %q", name, testCase.Name)
-			}
-		})
-	}
-}
-
 func TestClassifyUserAgentName(t *testing.T) {
 	testCases := []struct {
 		UserAgent string
@@ -468,7 +400,7 @@ func TestClassifyUserAgentName(t *testing.T) {
 		},
 		{
 			UserAgent: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
-			Category:  CategoryUnclassified,
+			Category:  CategoryAutomated,
 		},
 		{
 			UserAgent: "",

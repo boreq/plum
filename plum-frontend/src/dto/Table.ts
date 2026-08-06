@@ -17,4 +17,6 @@ export class TableHeaderColumn {
 export class TableRow {
     data: string[];
     fraction: number;
+    icon?: string;
+    iconTitle?: string;
 }

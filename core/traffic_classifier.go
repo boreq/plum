@@ -257,10 +257,11 @@ func (c *TrafficClassifier) maliciousRequests(remoteAddress string, t time.Time)
 	return malicious
 }
 
-func classifyUserAgent(userAgent string) Category {
-	name := strings.ToLower(UserAgentName(userAgent))
+func classifyUserAgent(rawUserAgent string) Category {
+	raw := strings.ToLower(rawUserAgent)
+	name := strings.ToLower(NewUserAgent(rawUserAgent).Name())
 
-	if isMissingUserAgent(name) {
+	if isMissingUserAgent(raw) {
 		return CategoryMalicious
 	}
 
@@ -273,12 +274,17 @@ func classifyUserAgent(userAgent string) Category {
 	}
 
 	for _, marker := range automatedUserAgentMarkers {
-		if strings.Contains(name, marker) {
+		if strings.Contains(raw, marker) {
 			return CategoryAutomated
 		}
 	}
 
 	return CategoryUnclassified
+}
+
+func isMissingUserAgent(raw string) bool {
+	raw = strings.TrimSpace(raw)
+	return raw == "" || raw == "-"
 }
 
 type scanRequest struct {
@@ -419,36 +425,6 @@ func containsInjection(r scanRequest) bool {
 	}
 
 	return false
-}
-
-func UserAgentName(userAgent string) string {
-	name, _, _ := strings.Cut(userAgent, "/")
-	name, _, _ = strings.Cut(name, " (")
-	name = strings.TrimSpace(name)
-
-	if !isSimpleUserAgentName(name) {
-		return userAgent
-	}
-
-	return name
-}
-
-func isMissingUserAgent(name string) bool {
-	return name == "" || name == "-"
-}
-
-func isSimpleUserAgentName(name string) bool {
-	if name == "" {
-		return false
-	}
-
-	for _, r := range name {
-		if !unicode.IsLetter(r) && r != ' ' && r != '-' && r != '_' {
-			return false
-		}
-	}
-
-	return true
 }
 
 func bucketKey(t time.Time) string {

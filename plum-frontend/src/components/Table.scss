@@ -37,6 +37,12 @@
             padding: 8px;
             z-index: 1;
 
+            .icon {
+                color: $box-normal-text-dimmed-color;
+                font-size: 16px;
+                margin-left: .5em;
+            }
+
             text-overflow: ellipsis;
             white-space: nowrap;
             overflow: hidden;
