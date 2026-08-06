@@ -37,6 +37,18 @@ func TestNewUserAgent(t *testing.T) {
 			Name:      "Googlebot",
 		},
 		{
+			UserAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm) Chrome/116.0.1938.76 Safari/537.36",
+			Name:      "bingbot",
+		},
+		{
+			UserAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36; compatible; OAI-SearchBot/1.3; robots.txt; +https://openai.com/searchbot",
+			Name:      "OAI-SearchBot",
+		},
+		{
+			UserAgent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/138.0.7204.23 Safari/537.36",
+			Name:      "HeadlessChrome",
+		},
+		{
 			UserAgent: "curl/7.64.0",
 			Name:      "curl",
 		},

@@ -5,9 +5,6 @@ import (
 	"unicode"
 )
 
-// browserMarkers maps a token found in a user agent to a browser. Every browser
-// claims to be Mozilla and most claim to be Safari or Chrome as well so the
-// order matters, the most specific token wins.
 var browserMarkers = []struct {
 	Marker  string
 	Browser *Browser
@@ -32,6 +29,13 @@ var browserMarkers = []struct {
 	{Marker: "trident/", Browser: BrowserInternetExplorer},
 }
 
+var automationMarkers = []struct {
+	Marker string
+	Name   string
+}{
+	{Marker: "headlesschrome/", Name: "HeadlessChrome"},
+}
+
 // UserAgent has either a name or a browser set, never both.
 type UserAgent struct {
 	name    string
@@ -43,6 +47,10 @@ func NewUserAgent(raw string) UserAgent {
 		if browser := recognizeBrowser(name); browser != nil {
 			return UserAgent{browser: browser}
 		}
+		return UserAgent{name: name}
+	}
+
+	if name, ok := automationName(raw); ok {
 		return UserAgent{name: name}
 	}
 
@@ -73,10 +81,8 @@ func (u UserAgent) String() string {
 	return u.Name()
 }
 
-// compatibleUserAgentName extracts the name of a bot which hides behind a
-// browser user agent, for example "Mozilla/5.0 (compatible; Googlebot/2.1)".
 func compatibleUserAgentName(raw string) (string, bool) {
-	_, rest, found := cutFold(raw, "(compatible; ")
+	_, rest, found := cutFold(raw, "compatible; ")
 	if !found {
 		return "", false
 	}
@@ -91,6 +97,18 @@ func compatibleUserAgentName(raw string) (string, bool) {
 	}
 
 	return name, true
+}
+
+func automationName(raw string) (string, bool) {
+	lowered := strings.ToLower(raw)
+
+	for _, marker := range automationMarkers {
+		if strings.Contains(lowered, marker.Marker) {
+			return marker.Name, true
+		}
+	}
+
+	return "", false
 }
 
 func recognizeBrowser(raw string) *Browser {

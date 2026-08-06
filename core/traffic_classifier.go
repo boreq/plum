@@ -94,6 +94,7 @@ var automatedUserAgentMarkers = []string{
 	"bazqux",
 	"palo alto networks",
 	"com.apple.webkit.networking",
+	"headlesschrome",
 	"mastodon",
 	"marginalia",
 	"terracotta",
