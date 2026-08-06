@@ -84,6 +84,18 @@ func TestClassifyUserAgent(t *testing.T) {
 			Category:  CategoryUnclassified,
 		},
 		{
+			UserAgent: "Googlebot-Image/1.0",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "DuckDuckBot/1.1; (+http://duckduckgo.com/duckduckbot.html)",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "Sogou web spider/4.0(+http://www.sogou.com/docs/help/webmasters.htm#07)",
+			Category:  CategoryAutomated,
+		},
+		{
 			UserAgent: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
 			Category:  CategoryUnclassified,
 		},

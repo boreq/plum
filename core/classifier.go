@@ -6,8 +6,17 @@ import (
 )
 
 var automatedUserAgentNames = map[string]struct{}{
-	"curl":       {},
-	"prometheus": {},
+	"curl":              {},
+	"prometheus":        {},
+	"googlebot":         {},
+	"googlebot-image":   {},
+	"googlebot-video":   {},
+	"googlebot-news":    {},
+	"duckduckbot":       {},
+	"duckduckbot-https": {},
+	"duckassistbot":     {},
+	"sogou web spider":  {},
+	"moooodotfarm":      {},
 }
 
 func UserAgentName(userAgent string) string {
