@@ -42,25 +42,25 @@ export default defineComponent({
         },
 
         hasNextPage(): boolean {
-            return this.page < this.allPages;
+            return this.page < this.lastPage;
         },
 
         hasPrevPage(): boolean {
             return this.page > 0;
         },
 
-        allPages(): number {
-            if (this.rows) {
-                return Math.floor(this.rows.length / this.perPage);
+        lastPage(): number {
+            if (!this.rows || this.rows.length === 0) {
+                return 0;
             }
-            return 0;
+            return Math.ceil(this.rows.length / this.perPage) - 1;
         },
     },
 
     watch: {
         rows(): void {
-            if (this.page > this.allPages) {
-                this.page = 0;
+            if (this.page > this.lastPage) {
+                this.page = this.lastPage;
             }
         },
     },
