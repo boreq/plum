@@ -17,9 +17,8 @@ type Data struct {
 	Categories map[Category]*CategoryData
 }
 
-func (d *Data) Insert(entry *parser.Entry) error {
+func (d *Data) Insert(entry *parser.Entry, category Category) error {
 	visit := createVisitHash(entry)
-	category := ClassifyUserAgent(entry.UserAgent)
 
 	categoryData := d.getOrCreateCategoryData(category)
 	uriData := categoryData.getOrCreateUriData(entry.HttpRequestURI)

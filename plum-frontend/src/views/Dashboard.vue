@@ -62,6 +62,13 @@
       </div>
 
       <div class="grid" :class="{ updating: updating }">
+          <div class="box box-inversed malicious-traffic">
+              <CategoryTraffic :data="data"
+                               :category="Category.Malicious"
+                               :checked="categoryChecked(Category.Malicious)"
+                               :active="selectedCategory === Category.Malicious"
+                               v-on:filter="toggleCategory"></CategoryTraffic>
+          </div>
           <div class="box box-inversed automated-traffic">
               <CategoryTraffic :data="data"
                                :category="Category.Automated"

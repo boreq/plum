@@ -250,6 +250,8 @@ func getCategory(s string) (core.Category, error) {
 	switch s {
 	case "":
 		return core.Category{}, nil
+	case "malicious":
+		return core.CategoryMalicious, nil
 	case "automated":
 		return core.CategoryAutomated, nil
 	case "unclassified":

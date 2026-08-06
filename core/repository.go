@@ -23,17 +23,19 @@ const visitPrefixFormat = "2006-01-02"
 const RetentionPeriod = 365 * 24 * time.Hour
 
 type Repository struct {
-	data      map[string]*Data
-	dataMutex sync.Mutex
-	conf      config.Website
-	log       logging.Logger
+	data       map[string]*Data
+	dataMutex  sync.Mutex
+	classifier *TrafficClassifier
+	conf       config.Website
+	log        logging.Logger
 }
 
 func NewRepository(conf config.Website) *Repository {
 	rv := &Repository{
-		data: make(map[string]*Data),
-		log:  logging.New("repository"),
-		conf: conf,
+		data:       make(map[string]*Data),
+		classifier: NewTrafficClassifier(),
+		log:        logging.New("repository"),
+		conf:       conf,
 	}
 	return rv
 }
@@ -46,6 +48,8 @@ func (r *Repository) Insert(entry *parser.Entry) error {
 		return nil
 	}
 
+	category := r.classifier.Classify(entry)
+
 	r.normalize(entry)
 
 	key := r.createKey(entry.Time)
@@ -54,7 +58,7 @@ func (r *Repository) Insert(entry *parser.Entry) error {
 		data = NewData()
 		r.data[key] = data
 	}
-	return data.Insert(entry)
+	return data.Insert(entry, category)
 }
 
 func (r *Repository) RetrieveHour(year int, month time.Month, day int, hour int, filter Filter) (*Summary, bool) {
@@ -108,6 +112,8 @@ func (r *Repository) RetrieveMonth(year int, month time.Month, filter Filter) (*
 func (r *Repository) RemoveOldData(now time.Time) {
 	r.dataMutex.Lock()
 	defer r.dataMutex.Unlock()
+
+	r.classifier.RemoveOldData(now)
 
 	cutoff := retentionCutoff(now)
 

@@ -5,11 +5,13 @@ type Category struct {
 }
 
 var (
+	CategoryMalicious    = Category{"malicious"}
 	CategoryAutomated    = Category{"automated"}
 	CategoryUnclassified = Category{"unclassified"}
 )
 
 var Categories = []Category{
+	CategoryMalicious,
 	CategoryAutomated,
 	CategoryUnclassified,
 }

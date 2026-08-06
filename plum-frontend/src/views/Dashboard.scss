@@ -3,11 +3,12 @@ $spacing: 10px;
 .grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto auto auto auto auto auto auto auto;
+    grid-template-rows: auto auto auto auto auto auto auto auto auto;
     grid-column-gap: $spacing;
     grid-row-gap: $spacing;
     grid-template-areas:
-        "automated-traffic unclassified-traffic"
+        "malicious-traffic automated-traffic"
+        "unclassified-traffic unclassified-traffic"
         "hits-and-visits hits-and-visits"
         "pages referers"
         "user-agents user-agents"
@@ -18,6 +19,10 @@ $spacing: 10px;
 
     >* {
         overflow: auto;
+    }
+
+    .malicious-traffic {
+        grid-area: malicious-traffic;
     }
 
     .automated-traffic {
@@ -129,8 +134,9 @@ $spacing: 10px;
 @media (max-width: $media-threshold-2) {
     .grid {
         grid-template-columns: 1fr;
-        grid-template-rows: auto auto auto auto auto auto auto auto auto auto;
+        grid-template-rows: auto auto auto auto auto auto auto auto auto auto auto;
         grid-template-areas:
+            "malicious-traffic"
             "automated-traffic"
             "unclassified-traffic"
             "hits-and-visits"
