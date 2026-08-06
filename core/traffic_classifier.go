@@ -72,6 +72,8 @@ var automatedUserAgentNames = map[string]struct{}{
 	"onlyread":      {},
 	"reeder":        {},
 	"tiny tiny rss": {},
+
+	"cms-checker": {},
 }
 
 var maliciousUserAgentNames = map[string]struct{}{
@@ -88,6 +90,8 @@ var automatedUserAgentMarkers = []string{
 	"feed",
 	"rss",
 	"newsblur",
+	"miniflux",
+	"bazqux",
 	"palo alto networks",
 	"com.apple.webkit.networking",
 	"mastodon",
