@@ -1,9 +1,14 @@
 package core
 
 type Filter struct {
-	Uri     string
-	Status  string
-	Referer string
+	Category Category
+	Uri      string
+	Status   string
+	Referer  string
+}
+
+func (f Filter) MatchesCategory(category Category) bool {
+	return f.Category.IsZero() || f.Category == category
 }
 
 func (f Filter) MatchesUri(uri string) bool {

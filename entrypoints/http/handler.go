@@ -68,10 +68,15 @@ func (h *Handler) hour(r *http.Request, ps httprouter.Params) (interface{}, api.
 		return nil, api.BadRequest
 	}
 
+	filter, err := getFilter(r)
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
 	rangeData, err := h.app.GetHour.Execute(app.GetHour{
 		Website: ps.ByName("name"),
 		Hour:    hour,
-		Filter:  getFilter(r),
+		Filter:  filter,
 	})
 	if err != nil {
 		return nil, mapError(err)
@@ -86,10 +91,15 @@ func (h *Handler) day(r *http.Request, ps httprouter.Params) (interface{}, api.E
 		return nil, api.BadRequest
 	}
 
+	filter, err := getFilter(r)
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
 	rangeData, err := h.app.GetDay.Execute(app.GetDay{
 		Website: ps.ByName("name"),
 		Day:     day,
-		Filter:  getFilter(r),
+		Filter:  filter,
 	})
 	if err != nil {
 		return nil, mapError(err)
@@ -104,10 +114,15 @@ func (h *Handler) month(r *http.Request, ps httprouter.Params) (interface{}, api
 		return nil, api.BadRequest
 	}
 
+	filter, err := getFilter(r)
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
 	rangeData, err := h.app.GetMonth.Execute(app.GetMonth{
 		Website: ps.ByName("name"),
 		Month:   month,
-		Filter:  getFilter(r),
+		Filter:  filter,
 	})
 	if err != nil {
 		return nil, mapError(err)
@@ -127,11 +142,16 @@ func (h *Handler) rangeHourly(r *http.Request, ps httprouter.Params) (interface{
 		return nil, api.BadRequest
 	}
 
+	filter, err := getFilter(r)
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
 	rangeData, err := h.app.GetRangeHourly.Execute(app.GetRangeHourly{
 		Website: ps.ByName("name"),
 		From:    from,
 		To:      to,
-		Filter:  getFilter(r),
+		Filter:  filter,
 	})
 	if err != nil {
 		return nil, mapError(err)
@@ -151,11 +171,16 @@ func (h *Handler) rangeDaily(r *http.Request, ps httprouter.Params) (interface{}
 		return nil, api.BadRequest
 	}
 
+	filter, err := getFilter(r)
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
 	rangeData, err := h.app.GetRangeDaily.Execute(app.GetRangeDaily{
 		Website: ps.ByName("name"),
 		From:    from,
 		To:      to,
-		Filter:  getFilter(r),
+		Filter:  filter,
 	})
 	if err != nil {
 		return nil, mapError(err)
@@ -175,11 +200,16 @@ func (h *Handler) rangeMonthly(r *http.Request, ps httprouter.Params) (interface
 		return nil, api.BadRequest
 	}
 
+	filter, err := getFilter(r)
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
 	rangeData, err := h.app.GetRangeMonthly.Execute(app.GetRangeMonthly{
 		Website: ps.ByName("name"),
 		From:    from,
 		To:      to,
-		Filter:  getFilter(r),
+		Filter:  filter,
 	})
 	if err != nil {
 		return nil, mapError(err)
@@ -199,12 +229,32 @@ func mapError(err error) api.Error {
 	}
 }
 
-func getFilter(r *http.Request) core.Filter {
+func getFilter(r *http.Request) (core.Filter, error) {
 	q := r.URL.Query()
+
+	category, err := getCategory(q.Get("category"))
+	if err != nil {
+		return core.Filter{}, errors.Wrap(err, "could not get the category")
+	}
+
 	return core.Filter{
-		Uri:     q.Get("uri"),
-		Status:  q.Get("status"),
-		Referer: q.Get("referer"),
+		Category: category,
+		Uri:      q.Get("uri"),
+		Status:   q.Get("status"),
+		Referer:  q.Get("referer"),
+	}, nil
+}
+
+func getCategory(s string) (core.Category, error) {
+	switch s {
+	case "":
+		return core.Category{}, nil
+	case "automated":
+		return core.CategoryAutomated, nil
+	case "unclassified":
+		return core.CategoryUnclassified, nil
+	default:
+		return core.Category{}, errors.New("unknown category")
 	}
 }
 

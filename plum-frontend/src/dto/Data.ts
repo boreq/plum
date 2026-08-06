@@ -9,6 +9,7 @@ export interface Metrics {
 }
 
 export interface Data extends Metrics {
+    categories: Dictionary<Metrics>;
     uris: Dictionary<Metrics>;
     statuses: Dictionary<Metrics>;
     referers: Dictionary<Metrics>;

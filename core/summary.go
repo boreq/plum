@@ -1,19 +1,25 @@
 package core
 
 func NewSummary() *Summary {
-	return &Summary{
-		Metrics:  NewMetrics(),
-		Uris:     make(map[string]*Metrics),
-		Statuses: make(map[string]*Metrics),
-		Referers: make(map[string]*Metrics),
+	summary := &Summary{
+		Metrics:    NewMetrics(),
+		Categories: make(map[Category]*Metrics),
+		Uris:       make(map[string]*Metrics),
+		Statuses:   make(map[string]*Metrics),
+		Referers:   make(map[string]*Metrics),
 	}
+	for _, category := range Categories {
+		getOrCreateMetrics(summary.Categories, category)
+	}
+	return summary
 }
 
 type Summary struct {
 	Metrics
-	Uris     map[string]*Metrics
-	Statuses map[string]*Metrics
-	Referers map[string]*Metrics
+	Categories map[Category]*Metrics
+	Uris       map[string]*Metrics
+	Statuses   map[string]*Metrics
+	Referers   map[string]*Metrics
 }
 
 func (s *Summary) InsertLeaf(uri, status, referer string, metrics Metrics, visitPrefix string) {
@@ -23,7 +29,11 @@ func (s *Summary) InsertLeaf(uri, status, referer string, metrics Metrics, visit
 	getOrCreateMetrics(s.Referers, referer).Add(metrics, visitPrefix)
 }
 
-func getOrCreateMetrics(target map[string]*Metrics, key string) *Metrics {
+func (s *Summary) InsertCategoryLeaf(category Category, metrics Metrics, visitPrefix string) {
+	getOrCreateMetrics(s.Categories, category).Add(metrics, visitPrefix)
+}
+
+func getOrCreateMetrics[K comparable](target map[K]*Metrics, key K) *Metrics {
 	metrics, ok := target[key]
 	if !ok {
 		created := NewMetrics()

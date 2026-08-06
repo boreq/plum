@@ -1,11 +1,12 @@
 import { defineComponent } from 'vue';
 import { TimePeriod } from '@/dto/TimePeriod';
 import { GroupingType } from '@/dto/GroupingType';
+import { Category, CategoryLabels } from '@/dto/Category';
 import type { RangeData } from '@/dto/Data';
 import { FilterDimension, FilterLabels, filtersEqual, type Filter } from '@/dto/Filter';
 import { ApiService } from '@/services/ApiService';
+import CategoryTraffic from '@/components/CategoryTraffic.vue';
 import HitsAndVisits from '@/components/HitsAndVisits.vue';
-import Summary from '@/components/Summary.vue';
 import Pages from '@/components/Pages.vue';
 import Referers from '@/components/Referers.vue';
 import BytesSent from '@/components/BytesSent.vue';
@@ -25,8 +26,8 @@ export default defineComponent({
     name: 'Dashboard',
 
     components: {
+        CategoryTraffic,
         HitsAndVisits,
-        Summary,
         Pages,
         Referers,
         BytesSent,
@@ -39,6 +40,7 @@ export default defineComponent({
         return {
             TimePeriod,
             GroupingType,
+            Category,
         };
     },
 
@@ -71,9 +73,13 @@ export default defineComponent({
                     return {
                         dimension: dimension,
                         label: FilterLabels[dimension],
-                        value: this.filter[dimension],
+                        value: this.filterValueLabel(dimension, this.filter[dimension]),
                     };
                 });
+        },
+
+        selectedCategory(): Category {
+            return this.filter[FilterDimension.Category] as Category;
         },
 
         // Changes whenever a different set of data is loaded. Used as a key so
@@ -121,6 +127,25 @@ export default defineComponent({
             }
             this.filter = {...this.filter, [dimension]: value};
             this.filterChanged();
+        },
+
+        categoryChecked(category: Category): boolean {
+            return !this.selectedCategory || this.selectedCategory === category;
+        },
+
+        toggleCategory(category: Category): void {
+            if (this.selectedCategory === category) {
+                this.removeFilter(FilterDimension.Category);
+            } else {
+                this.addFilter(FilterDimension.Category, category);
+            }
+        },
+
+        filterValueLabel(dimension: FilterDimension, value: string): string {
+            if (dimension === FilterDimension.Category) {
+                return CategoryLabels[value as Category] || value;
+            }
+            return value;
         },
 
         removeFilter(dimension: FilterDimension): void {

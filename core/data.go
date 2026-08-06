@@ -9,18 +9,20 @@ import (
 
 func NewData() *Data {
 	return &Data{
-		Uris: make(map[string]*UriData),
+		Categories: make(map[Category]*CategoryData),
 	}
 }
 
 type Data struct {
-	Uris map[string]*UriData
+	Categories map[Category]*CategoryData
 }
 
 func (d *Data) Insert(entry *parser.Entry) error {
 	visit := createVisitHash(entry)
+	category := ClassifyUserAgent(entry.UserAgent)
 
-	uriData := d.getOrCreateUriData(entry.HttpRequestURI)
+	categoryData := d.getOrCreateCategoryData(category)
+	uriData := categoryData.getOrCreateUriData(entry.HttpRequestURI)
 	statusData := uriData.getOrCreateStatusData(entry.Status)
 	refererData := statusData.getOrCreateRefererData(entry.Referer)
 	refererData.Insert(visit, entry.BodyBytesSent)
@@ -28,13 +30,28 @@ func (d *Data) Insert(entry *parser.Entry) error {
 	return nil
 }
 
-func (d *Data) getOrCreateUriData(uri string) *UriData {
-	uriData, ok := d.Uris[uri]
+func (d *Data) getOrCreateCategoryData(category Category) *CategoryData {
+	categoryData, ok := d.Categories[category]
+	if !ok {
+		categoryData = &CategoryData{
+			Uris: make(map[string]*UriData),
+		}
+		d.Categories[category] = categoryData
+	}
+	return categoryData
+}
+
+type CategoryData struct {
+	Uris map[string]*UriData
+}
+
+func (b *CategoryData) getOrCreateUriData(uri string) *UriData {
+	uriData, ok := b.Uris[uri]
 	if !ok {
 		uriData = &UriData{
 			Statuses: make(map[string]*StatusData),
 		}
-		d.Uris[uri] = uriData
+		b.Uris[uri] = uriData
 	}
 	return uriData
 }

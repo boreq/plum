@@ -14,9 +14,10 @@ type RangeData struct {
 
 type Data struct {
 	Metrics
-	Uris     map[string]Metrics `json:"uris"`
-	Statuses map[string]Metrics `json:"statuses"`
-	Referers map[string]Metrics `json:"referers"`
+	Categories map[string]Metrics `json:"categories"`
+	Uris       map[string]Metrics `json:"uris"`
+	Statuses   map[string]Metrics `json:"statuses"`
+	Referers   map[string]Metrics `json:"referers"`
 }
 
 type Metrics struct {
@@ -42,11 +43,20 @@ func NewRangeDataSlice(rangeData []app.RangeData) []RangeData {
 
 func newData(summary *core.Summary) Data {
 	return Data{
-		Metrics:  newMetrics(&summary.Metrics),
-		Uris:     newMetricsMap(summary.Uris),
-		Statuses: newMetricsMap(summary.Statuses),
-		Referers: newMetricsMap(summary.Referers),
+		Metrics:    newMetrics(&summary.Metrics),
+		Categories: newCategoryMetricsMap(summary.Categories),
+		Uris:       newMetricsMap(summary.Uris),
+		Statuses:   newMetricsMap(summary.Statuses),
+		Referers:   newMetricsMap(summary.Referers),
 	}
+}
+
+func newCategoryMetricsMap(source map[core.Category]*core.Metrics) map[string]Metrics {
+	rv := make(map[string]Metrics, len(source))
+	for category, metrics := range source {
+		rv[category.String()] = newMetrics(metrics)
+	}
+	return rv
 }
 
 func newMetricsMap(source map[string]*core.Metrics) map[string]Metrics {

@@ -176,22 +176,30 @@ func iterateMonth(year int, month time.Month) []time.Time {
 }
 
 func mergeData(target *Summary, source *Data, visitPrefix string, filter Filter) {
-	for uri, uriData := range source.Uris {
-		if !filter.MatchesUri(uri) {
-			continue
-		}
+	for category, categoryData := range source.Categories {
+		categoryMatches := filter.MatchesCategory(category)
 
-		for status, statusData := range uriData.Statuses {
-			if !filter.MatchesStatus(status) {
+		for uri, uriData := range categoryData.Uris {
+			if !filter.MatchesUri(uri) {
 				continue
 			}
 
-			for referer, refererData := range statusData.Referers {
-				if !filter.MatchesReferer(referer) {
+			for status, statusData := range uriData.Statuses {
+				if !filter.MatchesStatus(status) {
 					continue
 				}
 
-				target.InsertLeaf(uri, status, referer, refererData.Metrics, visitPrefix)
+				for referer, refererData := range statusData.Referers {
+					if !filter.MatchesReferer(referer) {
+						continue
+					}
+
+					target.InsertCategoryLeaf(category, refererData.Metrics, visitPrefix)
+
+					if categoryMatches {
+						target.InsertLeaf(uri, status, referer, refererData.Metrics, visitPrefix)
+					}
+				}
 			}
 		}
 	}

@@ -62,8 +62,19 @@
       </div>
 
       <div class="grid" :class="{ updating: updating }">
-          <div class="box box-inversed summary">
-              <Summary :data="data"></Summary>
+          <div class="box box-inversed automated-traffic">
+              <CategoryTraffic :data="data"
+                               :category="Category.Automated"
+                               :checked="categoryChecked(Category.Automated)"
+                               :active="selectedCategory === Category.Automated"
+                               v-on:filter="toggleCategory"></CategoryTraffic>
+          </div>
+          <div class="box box-inversed unclassified-traffic">
+              <CategoryTraffic :data="data"
+                               :category="Category.Unclassified"
+                               :checked="categoryChecked(Category.Unclassified)"
+                               :active="selectedCategory === Category.Unclassified"
+                               v-on:filter="toggleCategory"></CategoryTraffic>
           </div>
           <div class="box box-normal hits-and-visits">
               <HitsAndVisits :data="data" :groupingType="selectedGroupingType" v-on:select-data="selectData($event)"></HitsAndVisits>

@@ -7,7 +7,7 @@ $spacing: 10px;
     grid-column-gap: $spacing;
     grid-row-gap: $spacing;
     grid-template-areas:
-        "summary summary"
+        "automated-traffic unclassified-traffic"
         "hits-and-visits hits-and-visits"
         "pages referers"
         "bytes-sent-chart bytes-sent-chart"
@@ -19,8 +19,12 @@ $spacing: 10px;
         overflow: auto;
     }
 
-    .summary {
-        grid-area: summary;
+    .automated-traffic {
+        grid-area: automated-traffic;
+    }
+
+    .unclassified-traffic {
+        grid-area: unclassified-traffic;
     }
 
     .hits-and-visits {
@@ -67,7 +71,7 @@ $spacing: 10px;
 
     .box {
         margin: $spacing $spacing $spacing 0;
-        padding: .5em 1em;
+        padding: .8em;
 
         ul {
             margin: 0;
@@ -105,7 +109,7 @@ $spacing: 10px;
 }
 
 .box {
-    padding: 2em 1em;
+    padding: 2em;
     border-radius: 5px;
 }
 
@@ -120,9 +124,10 @@ $spacing: 10px;
 @media (max-width: $media-threshold-2) {
     .grid {
         grid-template-columns: 1fr;
-        grid-template-rows: auto auto auto auto auto auto auto auto;
+        grid-template-rows: auto auto auto auto auto auto auto auto auto;
         grid-template-areas:
-            "summary"
+            "automated-traffic"
+            "unclassified-traffic"
             "hits-and-visits"
             "pages"
             "referers"

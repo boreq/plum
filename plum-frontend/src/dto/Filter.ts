@@ -1,4 +1,5 @@
 export enum FilterDimension {
+    Category = 'category',
     Uri = 'uri',
     Status = 'status',
     Referer = 'referer',
@@ -9,6 +10,7 @@ export type Filter = {
 };
 
 export const FilterLabels: { [dimension in FilterDimension]: string } = {
+    [FilterDimension.Category]: 'Category',
     [FilterDimension.Uri]: 'Page',
     [FilterDimension.Status]: 'Status',
     [FilterDimension.Referer]: 'Referer',
