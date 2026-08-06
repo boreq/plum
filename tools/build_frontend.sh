@@ -12,4 +12,6 @@ corepack yarn build
 # Build backend
 cd ..
 echo "Running https://github.com/rakyll/statik"
-go run github.com/rakyll/statik -f -src=./plum-frontend/dist
+# -m omits modification times so that identical assets always produce an
+# identical statik.go
+go run github.com/rakyll/statik -f -m -src=./plum-frontend/dist
