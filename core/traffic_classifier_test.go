@@ -368,7 +368,11 @@ func TestClassifyUserAgentName(t *testing.T) {
 		},
 		{
 			UserAgent: "vuln_scanner/3.1.0 (CVE-2026-4020)",
-			Category:  CategoryAutomated,
+			Category:  CategoryMalicious,
+		},
+		{
+			UserAgent: "sqlmap/1.9#stable (https://sqlmap.org)",
+			Category:  CategoryMalicious,
 		},
 		{
 			UserAgent: "Mastodon/4.4.2 (+https://mastodon.social/)",

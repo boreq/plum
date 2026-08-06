@@ -28,7 +28,6 @@ var automatedUserAgentNames = map[string]struct{}{
 	"duckassistbot":     {},
 	"sogou web spider":  {},
 	"moooodotfarm":      {},
-	"vuln_scanner":      {},
 
 	"mastodon":      {},
 	"misskey":       {},
@@ -36,6 +35,16 @@ var automatedUserAgentNames = map[string]struct{}{
 	"onlyread":      {},
 	"reeder":        {},
 	"tiny tiny rss": {},
+}
+
+var maliciousUserAgentNames = map[string]struct{}{
+	"vuln_scanner": {},
+	"zgrab":        {},
+	"masscan":      {},
+	"nuclei":       {},
+	"sqlmap":       {},
+	"nikto":        {},
+	"wpscan":       {},
 }
 
 var automatedUserAgentMarkers = []string{
@@ -204,6 +213,10 @@ func classifyUserAgent(userAgent string) Category {
 	name := strings.ToLower(UserAgentName(userAgent))
 
 	if isMissingUserAgent(name) {
+		return CategoryMalicious
+	}
+
+	if _, ok := maliciousUserAgentNames[name]; ok {
 		return CategoryMalicious
 	}
 
