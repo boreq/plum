@@ -399,6 +399,22 @@ func TestClassifyUserAgentName(t *testing.T) {
 			Category:  CategoryAutomated,
 		},
 		{
+			UserAgent: "com.apple.WebKit.Networking/21624.2.5.11.8 Network/5812.121.1 macOS/26.5.2",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "NetworkingExtension/1 Network/5812.121.1 iOS/26.5",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "Roku/DVP-14.5 (14.5.0.4126-46)",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "http.rb/5.1.1 (Mastodon/4.2.17; +https://mastodon.social/)",
+			Category:  CategoryAutomated,
+		},
+		{
 			UserAgent: "Python-urllib/3.11",
 			Category:  CategoryAutomated,
 		},

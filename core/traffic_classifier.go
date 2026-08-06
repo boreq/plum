@@ -50,6 +50,8 @@ var automatedUserAgentNames = map[string]struct{}{
 	"amethyst":            {},
 	"nos":                 {},
 	"netnewswire":         {},
+	"networkingextension": {},
+	"roku":                {},
 
 	"turnitin":               {},
 	"navcrawl":               {},
@@ -87,6 +89,7 @@ var automatedUserAgentMarkers = []string{
 	"rss",
 	"newsblur",
 	"palo alto networks",
+	"com.apple.webkit.networking",
 	"mastodon",
 	"marginalia",
 	"terracotta",
