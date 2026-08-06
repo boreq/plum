@@ -96,6 +96,10 @@ var (
 		".log",
 	}
 
+	wordPressIncludeDirectories = []string{
+		"wp-includes",
+	}
+
 	wordPressProbeFiles = []string{
 		"wlwmanifest.xml",
 		"wp-config.php",
@@ -298,6 +302,18 @@ func requestsWordPressProbe(r scanRequest) bool {
 	for _, file := range wordPressProbeFiles {
 		if r.FileName == file {
 			return true
+		}
+	}
+
+	if !strings.HasSuffix(r.FileName, ".php") {
+		return false
+	}
+
+	for _, segment := range r.Segments {
+		for _, directory := range wordPressIncludeDirectories {
+			if segment == directory {
+				return true
+			}
 		}
 	}
 
