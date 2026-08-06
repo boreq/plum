@@ -28,6 +28,7 @@ var automatedUserAgentNames = map[string]struct{}{
 	"duckassistbot":     {},
 	"sogou web spider":  {},
 	"moooodotfarm":      {},
+	"vuln_scanner":      {},
 
 	"mastodon":      {},
 	"misskey":       {},
@@ -202,6 +203,10 @@ func (c *TrafficClassifier) maliciousRequests(remoteAddress string, t time.Time)
 func classifyUserAgent(userAgent string) Category {
 	name := strings.ToLower(UserAgentName(userAgent))
 
+	if isMissingUserAgent(name) {
+		return CategoryMalicious
+	}
+
 	if _, ok := automatedUserAgentNames[name]; ok {
 		return CategoryAutomated
 	}
@@ -367,13 +372,17 @@ func UserAgentName(userAgent string) string {
 	return name
 }
 
+func isMissingUserAgent(name string) bool {
+	return name == "" || name == "-"
+}
+
 func isSimpleUserAgentName(name string) bool {
 	if name == "" {
 		return false
 	}
 
 	for _, r := range name {
-		if !unicode.IsLetter(r) && r != ' ' && r != '-' {
+		if !unicode.IsLetter(r) && r != ' ' && r != '-' && r != '_' {
 			return false
 		}
 	}
