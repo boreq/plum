@@ -77,10 +77,12 @@ $spacing: 10px;
 .parameters {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
+    gap: $spacing;
+    margin-bottom: $spacing;
     font-size: 10px;
 
     .box {
-        margin: $spacing $spacing $spacing 0;
         padding: .8em;
 
         ul {

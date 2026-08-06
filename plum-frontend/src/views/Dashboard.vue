@@ -3,6 +3,19 @@
       <div class="parameters">
           <div class="box box-dimmed">
               <ul>
+                  <li v-for="website of websites" :key="website">
+                      <a v-bind:class="{ active: website === selectedWebsite }"
+                         v-on:click="selectWebsite(website)">
+                          {{ website }}
+                      </a>
+                  </li>
+              </ul>
+          </div>
+      </div>
+
+      <div class="parameters">
+          <div class="box box-dimmed">
+              <ul>
                   <li><a v-bind:class="{ active: selectedTimePeriod === TimePeriod.Day }" v-on:click="selectTimePeriod(TimePeriod.Day)">1D</a></li>
                   <li><a v-bind:class="{ active: selectedTimePeriod === TimePeriod.Week }" v-on:click="selectTimePeriod(TimePeriod.Week)">1W</a></li>
                   <li><a v-bind:class="{ active: selectedTimePeriod === TimePeriod.Month }" v-on:click="selectTimePeriod(TimePeriod.Month)">1M</a></li>
@@ -28,17 +41,6 @@
                       <a v-bind:class="{ active: selectedGroupingType === GroupingType.Monthly }"
                          v-on:click="selectGroupingType(GroupingType.Monthly)">
                           Monthly
-                      </a>
-                  </li>
-              </ul>
-          </div>
-
-          <div class="box box-dimmed">
-              <ul>
-                  <li v-for="website of websites" :key="website">
-                      <a v-bind:class="{ active: website === selectedWebsite }"
-                         v-on:click="selectWebsite(website)">
-                          {{ website }}
                       </a>
                   </li>
               </ul>
