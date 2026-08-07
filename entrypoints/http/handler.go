@@ -247,18 +247,17 @@ func getFilter(r *http.Request) (core.Filter, error) {
 }
 
 func getCategory(s string) (core.Category, error) {
-	switch s {
-	case "":
+	if s == "" {
 		return core.Category{}, nil
-	case "malicious":
-		return core.CategoryMalicious, nil
-	case "automated":
-		return core.CategoryAutomated, nil
-	case "unclassified":
-		return core.CategoryUnclassified, nil
-	default:
-		return core.Category{}, errors.New("unknown category")
 	}
+
+	for _, category := range core.Categories {
+		if category.String() == s {
+			return category, nil
+		}
+	}
+
+	return core.Category{}, errors.New("unknown category")
 }
 
 func getHour(ps httprouter.Params, yearName, monthName, dayName, hourName string) (core.Hour, error) {
