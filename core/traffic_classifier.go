@@ -74,18 +74,20 @@ var automatedUserAgentNames = map[string]struct{}{
 	"onlyread":      {},
 	"reeder":        {},
 	"tiny tiny rss": {},
+	"newsboat":      {},
 
 	"cms-checker": {},
 }
 
 var maliciousUserAgentNames = map[string]struct{}{
-	"vuln_scanner": {},
-	"zgrab":        {},
-	"masscan":      {},
-	"nuclei":       {},
-	"sqlmap":       {},
-	"nikto":        {},
-	"wpscan":       {},
+	"vuln_scanner":      {},
+	"zgrab":             {},
+	"masscan":           {},
+	"nuclei":            {},
+	"sqlmap":            {},
+	"nikto":             {},
+	"wpscan":            {},
+	"tlm-audit-scanner": {},
 }
 
 var automatedUserAgentMarkers = []string{

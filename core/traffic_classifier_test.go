@@ -531,6 +531,14 @@ func TestClassifyUserAgentName(t *testing.T) {
 			UserAgent: "curl/8.5.0 nuclei/3.1.0",
 			Category:  CategoryMalicious,
 		},
+		{
+			UserAgent: "TLM-Audit-Scanner/1.0",
+			Category:  CategoryMalicious,
+		},
+		{
+			UserAgent: "Newsboat/2.40.0",
+			Category:  CategoryAutomated,
+		},
 	}
 
 	for _, testCase := range testCases {
