@@ -66,16 +66,16 @@ func newCategoryMetricsMap(source map[core.Category]*core.Metrics) map[string]Me
 	return rv
 }
 
-func newUserAgentMetricsMap(source map[core.UserAgent]*core.Metrics) map[string]UserAgentMetrics {
+func newUserAgentMetricsMap(source map[string]*core.UserAgentMetrics) map[string]UserAgentMetrics {
 	rv := make(map[string]UserAgentMetrics, len(source))
-	for userAgent, metrics := range source {
+	for userAgent, userAgentMetrics := range source {
 		browser := ""
-		if userAgent.Browser() != nil {
-			browser = userAgent.Browser().String()
+		if userAgentMetrics.Browser != nil {
+			browser = userAgentMetrics.Browser.String()
 		}
 
-		rv[userAgent.Name()] = UserAgentMetrics{
-			Metrics: newMetrics(metrics),
+		rv[userAgent] = UserAgentMetrics{
+			Metrics: newMetrics(&userAgentMetrics.Metrics),
 			Browser: browser,
 		}
 	}

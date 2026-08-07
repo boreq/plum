@@ -24,7 +24,7 @@ func TestClassifyUsesTheUserAgent(t *testing.T) {
 		t.Errorf("got %q, want %q", category, CategoryAutomated)
 	}
 
-	if category := c.Classify(classifierEntry("2.2.2.2", "Mozilla/5.0", "/", now)); category != CategoryUnclassified {
+	if category := c.Classify(classifierEntry("2.2.2.2", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "/", now)); category != CategoryUnclassified {
 		t.Errorf("got %q, want %q", category, CategoryUnclassified)
 	}
 }
@@ -44,7 +44,7 @@ func TestClassifyDetectsScans(t *testing.T) {
 		t.Run(testCase.Uri, func(t *testing.T) {
 			c := NewTrafficClassifier()
 
-			category := c.Classify(classifierEntry("1.1.1.1", "Mozilla/5.0", testCase.Uri, time.Now().UTC()))
+			category := c.Classify(classifierEntry("1.1.1.1", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", testCase.Uri, time.Now().UTC()))
 			if category != testCase.Category {
 				t.Errorf("got %q, want %q", category, testCase.Category)
 			}
@@ -205,14 +205,14 @@ func TestClassifyMarksMaliciousAddresses(t *testing.T) {
 	now := time.Now().UTC()
 
 	for i := 0; i <= MaliciousRequestThreshold; i++ {
-		c.Classify(classifierEntry("1.1.1.1", "Mozilla/5.0", "/.env", now.Add(-time.Duration(i)*time.Hour)))
+		c.Classify(classifierEntry("1.1.1.1", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "/.env", now.Add(-time.Duration(i)*time.Hour)))
 	}
 
-	if category := c.Classify(classifierEntry("1.1.1.1", "Mozilla/5.0", "/", now)); category != CategoryMalicious {
+	if category := c.Classify(classifierEntry("1.1.1.1", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "/", now)); category != CategoryMalicious {
 		t.Errorf("got %q, want %q", category, CategoryMalicious)
 	}
 
-	if category := c.Classify(classifierEntry("2.2.2.2", "Mozilla/5.0", "/", now)); category != CategoryUnclassified {
+	if category := c.Classify(classifierEntry("2.2.2.2", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "/", now)); category != CategoryUnclassified {
 		t.Errorf("got %q, want %q", category, CategoryUnclassified)
 	}
 }
@@ -223,10 +223,10 @@ func TestClassifyIgnoresRequestsOutsideOfTheWindow(t *testing.T) {
 	old := now.Add(-trafficWindow).Add(-24 * time.Hour)
 
 	for i := 0; i <= MaliciousRequestThreshold; i++ {
-		c.Classify(classifierEntry("1.1.1.1", "Mozilla/5.0", "/.env", old))
+		c.Classify(classifierEntry("1.1.1.1", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "/.env", old))
 	}
 
-	if category := c.Classify(classifierEntry("1.1.1.1", "Mozilla/5.0", "/", now)); category != CategoryUnclassified {
+	if category := c.Classify(classifierEntry("1.1.1.1", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "/", now)); category != CategoryUnclassified {
 		t.Errorf("got %q, want %q", category, CategoryUnclassified)
 	}
 }
@@ -236,10 +236,10 @@ func TestClassifyKeepsAddressesBelowTheThresholdUnclassified(t *testing.T) {
 	now := time.Now().UTC()
 
 	for i := 0; i < MaliciousRequestThreshold; i++ {
-		c.Classify(classifierEntry("1.1.1.1", "Mozilla/5.0", "/.env", now))
+		c.Classify(classifierEntry("1.1.1.1", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "/.env", now))
 	}
 
-	if category := c.Classify(classifierEntry("1.1.1.1", "Mozilla/5.0", "/", now)); category != CategoryUnclassified {
+	if category := c.Classify(classifierEntry("1.1.1.1", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "/", now)); category != CategoryUnclassified {
 		t.Errorf("got %q, want %q", category, CategoryUnclassified)
 	}
 }
@@ -410,12 +410,191 @@ func TestClassifyUserAgentName(t *testing.T) {
 			UserAgent: "-",
 			Category:  CategoryMalicious,
 		},
+
+		{
+			UserAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36 Edg/151.0.0.0",
+			Category:  CategoryUnclassified,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 OPR/101.0.0.0",
+			Category:  CategoryUnclassified,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/52.0.2743.116 Safari/537.36 Edge/15.15063",
+			Category:  CategoryUnclassified,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (Windows NT 5.1; rv:38.0) Gecko/20100101 Firefox/38.0 SeaMonkey/2.35",
+			Category:  CategoryUnclassified,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (Maemo; Linux armv7l; rv:10.0.1) Gecko/20100101 Firefox/10.0.1 Fennec/10.0.1",
+			Category:  CategoryUnclassified,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36 TungstenBrowser/2.0",
+			Category:  CategoryUnclassified,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (Linux; Android 9; HRY-LX1 Build/HONORHRY-L21) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.93 Mobile Safari/537.36 YaApp_Android/10.20 YaSearchBrowser/10.20",
+			Category:  CategoryUnclassified,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (Linux; Android 8.1.0; M1813 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/66.0.3359.126 MQQBrowser/6.2 TBS/045018 Mobile Safari/537.36 MMWEBID/5434 MicroMessenger/7.0.9.1560(0x27000935) Process/tools NetType/4G Language/zh_CN ABI/arm64",
+			Category:  CategoryUnclassified,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (Linux; Android 7.1.2; Redmi 5 Build/N2G47H; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/63.0.3239.83 Mobile Safari/537.36 T7/11.3 baiduboxapp/11.3.6.11 (Baidu; P1 7.1.2)",
+			Category:  CategoryUnclassified,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; WOW64; rv:41.0) Gecko/20100101 Firefox/140.0.2 (x64 de)",
+			Category:  CategoryUnclassified,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Safari",
+			Category:  CategoryUnclassified,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/120.0.6099.119 Mobile/15E148 Safari/604.1",
+			Category:  CategoryUnclassified,
+		},
+
+		{
+			UserAgent: "Mozilla/5.0",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (X11; Linux x86_64)",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (compatible; HTML Proofer/5.0.10; +https://github.com/gjtorikian/html-proofer)",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (compatible; CensysInspect/1.1; +https://about.censys.io/)",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (compatible; SiteInspector/1.0)",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (compatible; NetcraftSurveyAgent/1.0; +info@netcraft.com)",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (Android) Nextcloud-android/3.29.0",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (Linux) mirall/3.13.0 (Nextcloud, ubuntu-6.8.0-45-generic ClientArchitecture: x86_64)",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Thunderbird/128.4.3",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (compatible; MSIE 8.0; Windows 98; Trident/5.1)",
+			Category:  CategoryAutomated,
+		},
+
+		{
+			UserAgent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36 curl/8.5.0",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.186 Mobile Safari/537.36 (compatible; GoogleOther)",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/138.0.7204.23 Safari/537.36",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36 sqlmap/1.9",
+			Category:  CategoryMalicious,
+		},
+		{
+			UserAgent: "curl/8.5.0 nuclei/3.1.0",
+			Category:  CategoryMalicious,
+		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.UserAgent, func(t *testing.T) {
 			if category := classifyUserAgent(testCase.UserAgent); category != testCase.Category {
 				t.Errorf("got %q, want %q", category, testCase.Category)
+			}
+		})
+	}
+}
+
+func TestUserAgentProducts(t *testing.T) {
+	testCases := []struct {
+		Name      string
+		UserAgent string
+		Products  []string
+	}{
+		{
+			Name:      "product with a version",
+			UserAgent: "curl/7.64.0",
+			Products:  []string{"curl"},
+		},
+		{
+			Name:      "product without a version",
+			UserAgent: "onlyread",
+			Products:  []string{"onlyread"},
+		},
+		{
+			Name:      "every product is returned",
+			UserAgent: "python/3.11 aiohttp/3.9.5",
+			Products:  []string{"python", "aiohttp"},
+		},
+		{
+			Name:      "products named in a comment",
+			UserAgent: "mozilla/5.0 (compatible; googlebot/2.1; +http://www.google.com/bot.html)",
+			Products:  []string{"mozilla", "compatible", "googlebot", "http:"},
+		},
+		{
+			Name:      "product named using multiple words",
+			UserAgent: "sogou web spider/4.0(+http://www.sogou.com/docs/help/webmasters.htm#07)",
+			Products:  []string{"sogou web spider", "sogou", "web", "spider", "http:"},
+		},
+		{
+			Name:      "product appended behind a browser",
+			UserAgent: "mozilla/5.0 (x11; linux x86_64) applewebkit/537.36 (khtml, like gecko) chrome/151.0.0.0 safari/537.36 curl/8.5.0",
+			Products:  []string{"mozilla", "x11", "linux x86_64", "linux", "x86_64", "applewebkit", "khtml", "like gecko", "like", "gecko", "chrome", "safari", "curl"},
+		},
+		{
+			Name:      "empty user agent",
+			UserAgent: "",
+			Products:  nil,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(t *testing.T) {
+			products := userAgentProducts(testCase.UserAgent)
+
+			if len(products) != len(testCase.Products) {
+				t.Fatalf("got %q, want %q", products, testCase.Products)
+			}
+
+			for i := range products {
+				if products[i] != testCase.Products[i] {
+					t.Fatalf("got %q, want %q", products, testCase.Products)
+				}
 			}
 		})
 	}

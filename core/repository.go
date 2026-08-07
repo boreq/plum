@@ -208,7 +208,7 @@ func mergeData(target *Summary, source *Data, visitPrefix string, filter Filter)
 						target.InsertCategoryLeaf(category, userAgentData.Metrics, visitPrefix)
 
 						if categoryMatches {
-							target.InsertLeaf(uri, status, referer, userAgent, userAgentData.Metrics, visitPrefix)
+							target.InsertLeaf(uri, status, referer, userAgent, userAgentData.Browser, userAgentData.Metrics, visitPrefix)
 						}
 					}
 				}

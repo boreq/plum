@@ -24,7 +24,7 @@ func (d *Data) Insert(entry *parser.Entry, category Category) error {
 	uriData := categoryData.getOrCreateUriData(entry.HttpRequestURI)
 	statusData := uriData.getOrCreateStatusData(entry.Status)
 	refererData := statusData.getOrCreateRefererData(entry.Referer)
-	userAgentData := refererData.getOrCreateUserAgentData(NewUserAgent(entry.UserAgent))
+	userAgentData := refererData.getOrCreateUserAgentData(entry.UserAgent, category)
 	userAgentData.Insert(visit, entry.BodyBytesSent)
 
 	return nil
@@ -79,7 +79,7 @@ func (b *StatusData) getOrCreateRefererData(referer string) *RefererData {
 	refererData, ok := b.Referers[referer]
 	if !ok {
 		refererData = &RefererData{
-			UserAgents: make(map[UserAgent]*UserAgentData),
+			UserAgents: make(map[string]*UserAgentData),
 		}
 		b.Referers[referer] = refererData
 	}
@@ -87,14 +87,20 @@ func (b *StatusData) getOrCreateRefererData(referer string) *RefererData {
 }
 
 type RefererData struct {
-	UserAgents map[UserAgent]*UserAgentData
+	UserAgents map[string]*UserAgentData
 }
 
-func (b *RefererData) getOrCreateUserAgentData(userAgent UserAgent) *UserAgentData {
+func (b *RefererData) getOrCreateUserAgentData(userAgent string, category Category) *UserAgentData {
 	userAgentData, ok := b.UserAgents[userAgent]
 	if !ok {
+		var browser *Browser
+		if category == CategoryUnclassified {
+			browser = RecognizeBrowser(userAgent)
+		}
+
 		userAgentData = &UserAgentData{
 			Metrics: NewMetrics(),
+			Browser: browser,
 		}
 		b.UserAgents[userAgent] = userAgentData
 	}
@@ -103,6 +109,7 @@ func (b *RefererData) getOrCreateUserAgentData(userAgent UserAgent) *UserAgentDa
 
 type UserAgentData struct {
 	Metrics
+	Browser *Browser
 }
 
 var visitHash = crypto.SHA512_256

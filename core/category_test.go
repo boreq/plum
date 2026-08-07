@@ -14,8 +14,8 @@ func testEntryWithUserAgent(userAgent, remoteAddress, uri, status, referer strin
 
 func TestFilterCategory(t *testing.T) {
 	r := testRepository(t,
-		testEntryWithUserAgent("Mozilla/5.0", "1.1.1.1", "/a", "200", "example.com", 10),
-		testEntryWithUserAgent("Mozilla/5.0", "2.2.2.2", "/b", "200", "example.com", 20),
+		testEntryWithUserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "1.1.1.1", "/a", "200", "example.com", 10),
+		testEntryWithUserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "2.2.2.2", "/b", "200", "example.com", 20),
 		testEntryWithUserAgent("curl/7.64.0", "3.3.3.3", "/c", "200", "example.com", 40),
 	)
 
@@ -84,8 +84,8 @@ func TestFilterCategory(t *testing.T) {
 
 func TestCategoryTotalsIgnoreTheCategoryFilter(t *testing.T) {
 	r := testRepository(t,
-		testEntryWithUserAgent("Mozilla/5.0", "1.1.1.1", "/a", "200", "example.com", 10),
-		testEntryWithUserAgent("Mozilla/5.0", "2.2.2.2", "/b", "200", "example.com", 20),
+		testEntryWithUserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "1.1.1.1", "/a", "200", "example.com", 10),
+		testEntryWithUserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "2.2.2.2", "/b", "200", "example.com", 20),
 		testEntryWithUserAgent("curl/7.64.0", "3.3.3.3", "/c", "200", "example.com", 40),
 	)
 
@@ -118,8 +118,8 @@ func TestCategoryTotalsIgnoreTheCategoryFilter(t *testing.T) {
 
 func TestCategoryTotalsRespectOtherFilters(t *testing.T) {
 	r := testRepository(t,
-		testEntryWithUserAgent("Mozilla/5.0", "1.1.1.1", "/a", "200", "example.com", 10),
-		testEntryWithUserAgent("Mozilla/5.0", "2.2.2.2", "/b", "200", "example.com", 20),
+		testEntryWithUserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "1.1.1.1", "/a", "200", "example.com", 10),
+		testEntryWithUserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "2.2.2.2", "/b", "200", "example.com", 20),
 		testEntryWithUserAgent("curl/7.64.0", "3.3.3.3", "/a", "200", "example.com", 40),
 	)
 

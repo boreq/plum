@@ -23,6 +23,7 @@ var automatedUserAgentNames = map[string]struct{}{
 	"googlebot-image":   {},
 	"googlebot-video":   {},
 	"googlebot-news":    {},
+	"googleother":       {},
 	"duckduckbot":       {},
 	"duckduckbot-https": {},
 	"duckassistbot":     {},
@@ -95,6 +96,7 @@ var automatedUserAgentMarkers = []string{
 	"palo alto networks",
 	"com.apple.webkit.networking",
 	"headlesschrome",
+	"google web preview",
 	"mastodon",
 	"marginalia",
 	"terracotta",
@@ -103,6 +105,12 @@ var automatedUserAgentMarkers = []string{
 	"crawler",
 	"trawler",
 	"spider",
+}
+
+var browserProducts = map[string]struct{}{
+	"safari":  {},
+	"firefox": {},
+	"chrome":  {},
 }
 
 var scanUris = map[string]struct{}{
@@ -264,18 +272,23 @@ func (c *TrafficClassifier) maliciousRequests(remoteAddress string, t time.Time)
 
 func classifyUserAgent(rawUserAgent string) Category {
 	raw := strings.ToLower(rawUserAgent)
-	name := strings.ToLower(NewUserAgent(rawUserAgent).Name())
 
 	if isMissingUserAgent(raw) {
 		return CategoryMalicious
 	}
 
-	if _, ok := maliciousUserAgentNames[name]; ok {
-		return CategoryMalicious
+	products := userAgentProducts(raw)
+
+	for _, product := range products {
+		if _, ok := maliciousUserAgentNames[product]; ok {
+			return CategoryMalicious
+		}
 	}
 
-	if _, ok := automatedUserAgentNames[name]; ok {
-		return CategoryAutomated
+	for _, product := range products {
+		if _, ok := automatedUserAgentNames[product]; ok {
+			return CategoryAutomated
+		}
 	}
 
 	for _, marker := range automatedUserAgentMarkers {
@@ -284,12 +297,68 @@ func classifyUserAgent(rawUserAgent string) Category {
 		}
 	}
 
+	if pretendsToBeBrowser(raw) && !containsBrowserProduct(raw) {
+		return CategoryAutomated
+	}
+
 	return CategoryUnclassified
 }
 
 func isMissingUserAgent(raw string) bool {
 	raw = strings.TrimSpace(raw)
 	return raw == "" || raw == "-"
+}
+
+func userAgentProducts(raw string) []string {
+	var rv []string
+	seen := make(map[string]struct{})
+
+	add := func(s string) {
+		product := userAgentProduct(s)
+		if product == "" {
+			return
+		}
+		if _, ok := seen[product]; ok {
+			return
+		}
+		seen[product] = struct{}{}
+		rv = append(rv, product)
+	}
+
+	for _, segment := range userAgentSegments(raw) {
+		add(segment)
+
+		for _, field := range strings.Fields(segment) {
+			add(field)
+		}
+	}
+
+	return rv
+}
+
+func userAgentSegments(raw string) []string {
+	return strings.FieldsFunc(raw, func(r rune) bool {
+		return r == '(' || r == ')' || r == ';' || r == ','
+	})
+}
+
+func userAgentProduct(s string) string {
+	name, _, _ := strings.Cut(s, "/")
+	return strings.Trim(name, " +")
+}
+
+func pretendsToBeBrowser(raw string) bool {
+	return strings.HasPrefix(raw, "mozilla/")
+}
+
+func containsBrowserProduct(raw string) bool {
+	for _, product := range userAgentProducts(raw) {
+		if _, ok := browserProducts[product]; ok {
+			return true
+		}
+	}
+
+	return false
 }
 
 type scanRequest struct {
