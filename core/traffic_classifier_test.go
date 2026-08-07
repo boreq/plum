@@ -150,6 +150,8 @@ func TestIsScanRequest(t *testing.T) {
 		{Uri: "/site/adminfuns.php", Scan: true},
 		{Uri: "/adminner.php", Scan: true},
 		{Uri: "/admin/adminner.php", Scan: true},
+		{Uri: "/classwithtostring.php", Scan: true},
+		{Uri: "/src/classwithtostring.php", Scan: true},
 		{Uri: "/this_is_a_new_hello_world.php", Scan: true},
 		{Uri: "/tmp/this_is_a_new_hello_world.php", Scan: true},
 		{Uri: "/config.php", Scan: true},
@@ -168,6 +170,10 @@ func TestIsScanRequest(t *testing.T) {
 		{Uri: "/test/php-info", Scan: true},
 		{Uri: "/phpinfo.php3", Scan: true},
 		{Uri: "/test/phpinfo.php3", Scan: true},
+		{Uri: "/admin.php", Scan: true},
+		{Uri: "/panel/admin.php", Scan: true},
+		{Uri: "/wp-login.php", Scan: true},
+		{Uri: "/blog/wp-login.php", Scan: true},
 
 		{Uri: "/posts/wp-config", Scan: false},
 		{Uri: "/posts/wp-config-php-explained", Scan: false},
@@ -180,7 +186,6 @@ func TestIsScanRequest(t *testing.T) {
 
 		// Plausible names on a real site, scanners hit them too but the cost
 		// of flagging every visitor of such a page is higher.
-		{Uri: "/admin.php", Scan: false},
 		{Uri: "/media.php", Scan: false},
 		{Uri: "/ops.php", Scan: false},
 		{Uri: "/aa.php", Scan: false},
@@ -221,7 +226,6 @@ func TestIsScanRequest(t *testing.T) {
 		{Uri: "/blog/post.php?id=5", Scan: false},
 		{Uri: "/shop/checkout.aspx", Scan: false},
 		{Uri: "/app/handler.jsp", Scan: false},
-		{Uri: "/wp-login.php", Scan: false},
 		{Uri: "/wp-content/themes/theme/style.css", Scan: false},
 		{Uri: "/wp-includes/js/jquery/jquery.min.js", Scan: false},
 		{Uri: "/wp-includes/css/dist/block-library/style.min.css", Scan: false},

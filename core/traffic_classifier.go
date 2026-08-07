@@ -171,10 +171,13 @@ var sensitiveFileNames = map[string]struct{}{
 
 	"wlwmanifest.xml": {},
 	"wp-config.php":   {},
+	"wp-login.php":    {},
 	"xmlrpc.php":      {},
 
+	"admin.php":                     {},
 	"adminfuns.php":                 {},
 	"adminner.php":                  {},
+	"classwithtostring.php":         {},
 	"php-info":                      {},
 	"php-info.php":                  {},
 	"php_info":                      {},
