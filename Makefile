@@ -26,6 +26,13 @@ log:
 test:
 	go test ./...
 
+.PHONY: benchmark
+benchmark:
+ifndef LOG
+	$(error pass a log to run the benchmarks against eg. `make benchmark LOG=./_logs/drive.access.log`)
+endif
+	go test ./core/ -run '^$$' -bench 'BenchmarkLoad|BenchmarkParse' -benchtime 1x -count=3 -benchmark-log $(abspath $(LOG))
+
 .PHONY: test-verbose
 test-verbose:
 	go test -v ./...

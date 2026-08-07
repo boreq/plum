@@ -297,7 +297,7 @@ func classifyUserAgent(rawUserAgent string) Category {
 		}
 	}
 
-	if pretendsToBeBrowser(raw) && !containsBrowserProduct(raw) {
+	if pretendsToBeBrowser(raw) && !containsBrowserProduct(products) {
 		return CategoryPossiblyAutomated
 	}
 
@@ -351,8 +351,8 @@ func pretendsToBeBrowser(raw string) bool {
 	return strings.HasPrefix(raw, "mozilla/")
 }
 
-func containsBrowserProduct(raw string) bool {
-	for _, product := range userAgentProducts(raw) {
+func containsBrowserProduct(products []string) bool {
+	for _, product := range products {
 		if _, ok := browserProducts[product]; ok {
 			return true
 		}
