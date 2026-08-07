@@ -21,16 +21,16 @@ func NewGetDayHandler(repositories *core.Repositories) *GetDayHandler {
 	}
 }
 
-func (h *GetDayHandler) Execute(query GetDay) (PointResult, error) {
+func (h *GetDayHandler) Execute(query GetDay) (*core.Summary, error) {
 	repository, ok := h.repositories.Get(query.Website)
 	if !ok {
-		return PointResult{}, ErrWebsiteNotFound
+		return nil, ErrWebsiteNotFound
 	}
 
 	summary, ok := repository.RetrieveDay(query.Day.Year(), query.Day.Month(), query.Day.Day(), query.Filter)
 	if !ok {
-		return PointResult{}, errors.Wrap(ErrDataNotFound, "could not retrieve the day")
+		return nil, errors.Wrap(ErrDataNotFound, "could not retrieve the day")
 	}
 
-	return PointResult{Time: query.Day.StartingPoint(), Data: summary}, nil
+	return summary, nil
 }

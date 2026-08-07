@@ -64,7 +64,7 @@ export default defineComponent({
             selectedGroupingType: GroupingType.Hourly,
 
             updating: false,
-            updatingLatest: false,
+            refreshing: false,
 
             websites: [] as string[],
             selectedWebsite: '',
@@ -98,7 +98,7 @@ export default defineComponent({
         },
 
         summary(): Data {
-            return this.selectedTime ? this.pointSummary : this.rangeSummary;
+            return this.selectedTime ? (this.pointSummary || this.rangeSummary) : this.rangeSummary;
         },
 
         selectedTimeLabel(): string {
@@ -116,8 +116,8 @@ export default defineComponent({
         // Changes whenever a different set of data is loaded. Used as a key so
         // that the tables are recreated and their pagination is reset instead
         // of displaying a page which makes no sense for the new data. Periodic
-        // reloads of the latest data point don't affect this value so that they
-        // don't interrupt the user.
+        // refreshes don't affect this value so that they don't interrupt the
+        // user.
         tableKey(): string {
             const filter = Object.values(FilterDimension)
                 .map(dimension => `${dimension}=${this.filter[dimension] || ''}`)
@@ -193,8 +193,6 @@ export default defineComponent({
             return value;
         },
 
-        // Only the summary depends on the selected data point so the series
-        // doesn't have to be loaded again.
         selectData(index: number): void {
             const clicked = index !== null && index !== undefined && index >= 0 && index < this.series.length
                 ? this.series[index].time
@@ -206,8 +204,7 @@ export default defineComponent({
             }
 
             this.selectedTime = time;
-            this.pointSummary = null;
-            this.updating = true;
+            this.refreshing = true;
             this.cancelReload();
 
             const parameters = this.currentParameters();
@@ -267,8 +264,8 @@ export default defineComponent({
             this.loadData();
         },
 
-        reloadLatestData(): void {
-            this.updatingLatest = true;
+        refreshData(): void {
+            this.refreshing = true;
             this.loadData();
         },
 
@@ -286,21 +283,31 @@ export default defineComponent({
                     if (this.parametersUnchanged(parameters)) {
                         this.rangeSummary = response.data.summary;
                         this.series = response.data.series || [];
+                        this.dropSelectionOutsideSeries();
                     }
                 })
                 .catch(() => undefined);
         },
 
+        dropSelectionOutsideSeries(): void {
+            if (this.selectedTime && !this.series.some(v => v.time === this.selectedTime)) {
+                this.selectedTime = null;
+                this.pointSummary = null;
+            }
+        },
+
         loadPoint(parameters: Parameters): Promise<void> {
             if (!parameters.selectedTime) {
-                this.pointSummary = null;
+                if (this.parametersUnchanged(parameters)) {
+                    this.pointSummary = null;
+                }
                 return Promise.resolve();
             }
 
             return apiService.getTimePoint(parameters.website, parameters.groupingType, parameters.selectedTime, parameters.filter)
                 .then(response => {
                     if (this.parametersUnchanged(parameters)) {
-                        this.pointSummary = response.data.data;
+                        this.pointSummary = response.data;
                     }
                 })
                 .catch(() => undefined);
@@ -311,7 +318,7 @@ export default defineComponent({
                 return;
             }
             this.updating = false;
-            this.updatingLatest = false;
+            this.refreshing = false;
             this.scheduleReload(parameters);
         },
 
@@ -319,7 +326,7 @@ export default defineComponent({
             this.cancelReload();
             this.timeoutID = setTimeout(() => {
                 if (this.parametersUnchanged(parameters)) {
-                    this.reloadLatestData();
+                    this.refreshData();
                 }
             }, RELOAD_INTERVAL);
         },

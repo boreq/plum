@@ -21,16 +21,16 @@ func NewGetMonthHandler(repositories *core.Repositories) *GetMonthHandler {
 	}
 }
 
-func (h *GetMonthHandler) Execute(query GetMonth) (PointResult, error) {
+func (h *GetMonthHandler) Execute(query GetMonth) (*core.Summary, error) {
 	repository, ok := h.repositories.Get(query.Website)
 	if !ok {
-		return PointResult{}, ErrWebsiteNotFound
+		return nil, ErrWebsiteNotFound
 	}
 
 	summary, ok := repository.RetrieveMonth(query.Month.Year(), query.Month.Month(), query.Filter)
 	if !ok {
-		return PointResult{}, errors.Wrap(ErrDataNotFound, "could not retrieve the month")
+		return nil, errors.Wrap(ErrDataNotFound, "could not retrieve the month")
 	}
 
-	return PointResult{Time: query.Month.StartingPoint(), Data: summary}, nil
+	return summary, nil
 }

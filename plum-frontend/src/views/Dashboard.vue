@@ -62,7 +62,7 @@
               </a>
           </div>
 
-          <div class="box box-dimmed" v-if="updating || updatingLatest">
+          <div class="box box-dimmed" v-if="updating || refreshing">
               <i class="fas fa-spinner fa-spin"></i>
           </div>
       </div>

@@ -84,8 +84,8 @@ export default defineComponent({
             this.drawChart(chartData);
         },
 
-        toStatusString(status: string): string {
-            return status[0] + 'xx';
+        statusClass(datasetIndex: number): string {
+            return `${datasetIndex + 1}xx`;
         },
 
         drawChart(chartData: ChartData[]): void {
@@ -102,7 +102,7 @@ export default defineComponent({
 
             const statusDatas: number[][] = [];
             for (let datasetIndex = 0; datasetIndex < this.chart.data.datasets.length; datasetIndex++) {
-                const statusType = this.toStatusString((datasetIndex + 1).toString());
+                const statusType = this.statusClass(datasetIndex);
                 statusDatas.push(chartData.map(v => {
                     const total = Object.values(v.statuses).reduce((acc, hits) => acc + hits, 0);
                     return total ? (v.statuses[statusType] || 0) / total : 0;
@@ -137,7 +137,7 @@ export default defineComponent({
                 data: {
                     labels: [],
                     datasets: STATUS_COLORS.map((color, index) => {
-                        return this.createDataset(this.toStatusString((index + 1).toString()), color);
+                        return this.createDataset(this.statusClass(index), color);
                     }),
                 },
                 options: {

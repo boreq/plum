@@ -20,11 +20,6 @@ export interface Data extends Metrics {
     userAgents: Dictionary<UserAgentMetrics>;
 }
 
-export interface PointResult {
-    time: string;
-    data: Data;
-}
-
 export interface SeriesPoint extends Metrics {
     time: string;
     statuses: Dictionary<number>;
@@ -35,11 +30,11 @@ export interface RangeResult {
     series: SeriesPoint[];
 }
 
-export const emptyMetrics: Metrics = {
+export const emptyMetrics: Metrics = Object.freeze({
     visits: 0,
     hits: 0,
     bytes: 0,
-};
+});
 
 export interface NamedMetrics extends Metrics {
     name: string;

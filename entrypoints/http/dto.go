@@ -7,11 +7,6 @@ import (
 	"github.com/boreq/plum/core"
 )
 
-type PointResult struct {
-	Time time.Time `json:"time"`
-	Data Data      `json:"data"`
-}
-
 type RangeResult struct {
 	Summary Data          `json:"summary"`
 	Series  []SeriesPoint `json:"series"`
@@ -41,13 +36,6 @@ type Metrics struct {
 	Visits        int `json:"visits"`
 	Hits          int `json:"hits"`
 	BodyBytesSent int `json:"bytes"`
-}
-
-func NewPointResult(pointResult app.PointResult) PointResult {
-	return PointResult{
-		Time: pointResult.Time,
-		Data: newData(pointResult.Data),
-	}
 }
 
 func NewRangeResult(rangeResult app.RangeResult) RangeResult {

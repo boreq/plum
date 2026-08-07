@@ -59,10 +59,7 @@ export default defineComponent({
         },
 
         metrics(): Metrics {
-            if (!this.data || !this.data.categories) {
-                return emptyMetrics;
-            }
-            return this.data.categories[this.category] || emptyMetrics;
+            return this.data?.categories?.[this.category] || emptyMetrics;
         },
     },
 
@@ -80,7 +77,7 @@ export default defineComponent({
         },
 
         allCategories(selector: (metrics: Metrics) => number): number {
-            if (!this.data || !this.data.categories) {
+            if (!this.data?.categories) {
                 return 0;
             }
             return Object.values(this.data.categories).reduce((acc, metrics) => acc + selector(metrics), 0);

@@ -36,11 +36,6 @@ func New(repositories *core.Repositories) *Application {
 	}
 }
 
-type PointResult struct {
-	Time time.Time
-	Data *core.Summary
-}
-
 type RangeResult struct {
 	Summary *core.Summary
 	Series  []SeriesPoint

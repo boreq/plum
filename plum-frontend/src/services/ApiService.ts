@@ -2,7 +2,7 @@ import { DateTime } from 'luxon';
 import type { DurationLike } from 'luxon';
 import { TimePeriod } from '@/dto/TimePeriod';
 import { GroupingType } from '@/dto/GroupingType';
-import type { PointResult, RangeResult } from '@/dto/Data';
+import type { Data, RangeResult } from '@/dto/Data';
 import type { Filter } from '@/dto/Filter';
 import axios from 'axios';
 import type { AxiosResponse } from 'axios';
@@ -32,7 +32,7 @@ export class ApiService {
         }
     }
 
-    getTimePoint(website: string, groupingType: GroupingType, time: string, filter: Filter): Promise<AxiosResponse<PointResult>> {
+    getTimePoint(website: string, groupingType: GroupingType, time: string, filter: Filter): Promise<AxiosResponse<Data>> {
         const t = DateTime.fromISO(time).toUTC();
 
         switch (groupingType) {
@@ -47,19 +47,19 @@ export class ApiService {
         }
     }
 
-    private getHour(website: string, t: DateTime, filter: Filter): Promise<AxiosResponse<PointResult>> {
+    private getHour(website: string, t: DateTime, filter: Filter): Promise<AxiosResponse<Data>> {
         const url = `hour/${t.year}/${t.month}/${t.day}/${t.hour}.json`;
-        return axios.get<PointResult>(API_PREFIX + this.websiteUrl(website) + url, {params: filter});
+        return axios.get<Data>(API_PREFIX + this.websiteUrl(website) + url, {params: filter});
     }
 
-    private getDay(website: string, t: DateTime, filter: Filter): Promise<AxiosResponse<PointResult>> {
+    private getDay(website: string, t: DateTime, filter: Filter): Promise<AxiosResponse<Data>> {
         const url = `day/${t.year}/${t.month}/${t.day}.json`;
-        return axios.get<PointResult>(API_PREFIX + this.websiteUrl(website) + url, {params: filter});
+        return axios.get<Data>(API_PREFIX + this.websiteUrl(website) + url, {params: filter});
     }
 
-    private getMonth(website: string, t: DateTime, filter: Filter): Promise<AxiosResponse<PointResult>> {
+    private getMonth(website: string, t: DateTime, filter: Filter): Promise<AxiosResponse<Data>> {
         const url = `month/${t.year}/${t.month}.json`;
-        return axios.get<PointResult>(API_PREFIX + this.websiteUrl(website) + url, {params: filter});
+        return axios.get<Data>(API_PREFIX + this.websiteUrl(website) + url, {params: filter});
     }
 
     private getHourly(website: string, from: DateTime, to: DateTime, filter: Filter): Promise<AxiosResponse<RangeResult>> {
