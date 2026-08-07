@@ -68,7 +68,7 @@ func TestNewRangeDataJSON(t *testing.T) {
 		t.Fatalf("marshal: %v", err)
 	}
 
-	expected := fmt.Sprintf(`{"time":"%s","data":{"visits":2,"hits":3,"bytes":250,"categories":{"automated":{"visits":0,"hits":0,"bytes":0},"malicious":{"visits":0,"hits":0,"bytes":0},"unclassified":{"visits":2,"hits":3,"bytes":250}},"uris":{"/index.html":{"visits":2,"hits":3,"bytes":250}},"statuses":{"200":{"visits":2,"hits":2,"bytes":200},"404":{"visits":1,"hits":1,"bytes":50}},"referers":{"example.com":{"visits":1,"hits":2,"bytes":150},"other.example.com":{"visits":1,"hits":1,"bytes":100}},"userAgents":{"other agent":{"visits":1,"hits":1,"bytes":100,"browser":""},"user agent":{"visits":1,"hits":2,"bytes":150,"browser":""}}}}`,
+	expected := fmt.Sprintf(`{"time":"%s","data":{"visits":2,"hits":3,"bytes":250,"categories":{"automated":{"visits":0,"hits":0,"bytes":0},"malicious":{"visits":0,"hits":0,"bytes":0},"possibly-automated":{"visits":0,"hits":0,"bytes":0},"unclassified":{"visits":2,"hits":3,"bytes":250}},"uris":{"/index.html":{"visits":2,"hits":3,"bytes":250}},"statuses":{"200":{"visits":2,"hits":2,"bytes":200},"404":{"visits":1,"hits":1,"bytes":50}},"referers":{"example.com":{"visits":1,"hits":2,"bytes":150},"other.example.com":{"visits":1,"hits":1,"bytes":100}},"userAgents":{"other agent":{"visits":1,"hits":1,"bytes":100,"browser":""},"user agent":{"visits":1,"hits":2,"bytes":150,"browser":""}}}}`,
 		entryTime.Truncate(time.Hour).Format(time.RFC3339))
 
 	if string(j) != expected {

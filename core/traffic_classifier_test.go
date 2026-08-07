@@ -462,51 +462,51 @@ func TestClassifyUserAgentName(t *testing.T) {
 
 		{
 			UserAgent: "Mozilla/5.0",
-			Category:  CategoryAutomated,
+			Category:  CategoryPossiblyAutomated,
 		},
 		{
 			UserAgent: "Mozilla/5.0 (X11; Linux x86_64)",
-			Category:  CategoryAutomated,
+			Category:  CategoryPossiblyAutomated,
 		},
 		{
 			UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-			Category:  CategoryAutomated,
+			Category:  CategoryPossiblyAutomated,
 		},
 		{
 			UserAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)",
-			Category:  CategoryAutomated,
+			Category:  CategoryPossiblyAutomated,
 		},
 		{
 			UserAgent: "Mozilla/5.0 (compatible; HTML Proofer/5.0.10; +https://github.com/gjtorikian/html-proofer)",
-			Category:  CategoryAutomated,
+			Category:  CategoryPossiblyAutomated,
 		},
 		{
 			UserAgent: "Mozilla/5.0 (compatible; CensysInspect/1.1; +https://about.censys.io/)",
-			Category:  CategoryAutomated,
+			Category:  CategoryPossiblyAutomated,
 		},
 		{
 			UserAgent: "Mozilla/5.0 (compatible; SiteInspector/1.0)",
-			Category:  CategoryAutomated,
+			Category:  CategoryPossiblyAutomated,
 		},
 		{
 			UserAgent: "Mozilla/5.0 (compatible; NetcraftSurveyAgent/1.0; +info@netcraft.com)",
-			Category:  CategoryAutomated,
+			Category:  CategoryPossiblyAutomated,
 		},
 		{
 			UserAgent: "Mozilla/5.0 (Android) Nextcloud-android/3.29.0",
-			Category:  CategoryAutomated,
+			Category:  CategoryPossiblyAutomated,
 		},
 		{
 			UserAgent: "Mozilla/5.0 (Linux) mirall/3.13.0 (Nextcloud, ubuntu-6.8.0-45-generic ClientArchitecture: x86_64)",
-			Category:  CategoryAutomated,
+			Category:  CategoryPossiblyAutomated,
 		},
 		{
 			UserAgent: "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Thunderbird/128.4.3",
-			Category:  CategoryAutomated,
+			Category:  CategoryPossiblyAutomated,
 		},
 		{
 			UserAgent: "Mozilla/5.0 (compatible; MSIE 8.0; Windows 98; Trident/5.1)",
-			Category:  CategoryAutomated,
+			Category:  CategoryPossiblyAutomated,
 		},
 
 		{

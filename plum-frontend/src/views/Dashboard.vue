@@ -78,6 +78,13 @@
                                :active="selectedCategory === Category.Automated"
                                v-on:filter="toggleCategory"></CategoryTraffic>
           </div>
+          <div class="box box-inversed possibly-automated-traffic">
+              <CategoryTraffic :data="data"
+                               :category="Category.PossiblyAutomated"
+                               :checked="categoryChecked(Category.PossiblyAutomated)"
+                               :active="selectedCategory === Category.PossiblyAutomated"
+                               v-on:filter="toggleCategory"></CategoryTraffic>
+          </div>
           <div class="box box-inversed unclassified-traffic">
               <CategoryTraffic :data="data"
                                :category="Category.Unclassified"

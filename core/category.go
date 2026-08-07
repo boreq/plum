@@ -5,14 +5,16 @@ type Category struct {
 }
 
 var (
-	CategoryMalicious    = Category{"malicious"}
-	CategoryAutomated    = Category{"automated"}
-	CategoryUnclassified = Category{"unclassified"}
+	CategoryMalicious         = Category{"malicious"}
+	CategoryAutomated         = Category{"automated"}
+	CategoryPossiblyAutomated = Category{"possibly-automated"}
+	CategoryUnclassified      = Category{"unclassified"}
 )
 
 var Categories = []Category{
 	CategoryMalicious,
 	CategoryAutomated,
+	CategoryPossiblyAutomated,
 	CategoryUnclassified,
 }
 

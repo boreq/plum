@@ -298,7 +298,7 @@ func classifyUserAgent(rawUserAgent string) Category {
 	}
 
 	if pretendsToBeBrowser(raw) && !containsBrowserProduct(raw) {
-		return CategoryAutomated
+		return CategoryPossiblyAutomated
 	}
 
 	return CategoryUnclassified

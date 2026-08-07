@@ -8,7 +8,7 @@ $spacing: 10px;
     grid-row-gap: $spacing;
     grid-template-areas:
         "malicious-traffic automated-traffic"
-        "unclassified-traffic unclassified-traffic"
+        "possibly-automated-traffic unclassified-traffic"
         "hits-and-visits hits-and-visits"
         "pages referers"
         "user-agents user-agents"
@@ -27,6 +27,10 @@ $spacing: 10px;
 
     .automated-traffic {
         grid-area: automated-traffic;
+    }
+
+    .possibly-automated-traffic {
+        grid-area: possibly-automated-traffic;
     }
 
     .unclassified-traffic {
@@ -136,10 +140,11 @@ $spacing: 10px;
 @media (max-width: $media-threshold-2) {
     .grid {
         grid-template-columns: 1fr;
-        grid-template-rows: auto auto auto auto auto auto auto auto auto auto auto;
+        grid-template-rows: auto auto auto auto auto auto auto auto auto auto auto auto;
         grid-template-areas:
             "malicious-traffic"
             "automated-traffic"
+            "possibly-automated-traffic"
             "unclassified-traffic"
             "hits-and-visits"
             "pages"

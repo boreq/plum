@@ -19,11 +19,8 @@ frontend:
 log:
 	mkdir -p _logs
 	scp server:/var/log/nginx/blender.access.log ./_logs/blender.access.log
-
-.PHONY: log-moooodotfarm
-log-moooodotfarm:
-	mkdir -p _logs
 	scp server:/var/log/nginx/moooodotfarm.access.log ./_logs/moooodotfarm.access.log
+	scp server:/var/log/nginx/drive.access.log ./_logs/drive.access.log
 
 .PHONY: test
 test:
