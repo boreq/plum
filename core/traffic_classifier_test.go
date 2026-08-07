@@ -154,13 +154,20 @@ func TestIsScanRequest(t *testing.T) {
 		{Uri: "/app/config.php", Scan: true},
 		{Uri: "/phpinfo.php", Scan: true},
 		{Uri: "/test/phpinfo.php", Scan: true},
+		{Uri: "/phpinfo", Scan: true},
+		{Uri: "/test/phpinfo", Scan: true},
+		{Uri: "/php_info.php", Scan: true},
+		{Uri: "/test/php_info.php", Scan: true},
+		{Uri: "/php_info", Scan: true},
+		{Uri: "/test/php_info", Scan: true},
 
 		{Uri: "/posts/wp-config", Scan: false},
 		{Uri: "/posts/wp-config-php-explained", Scan: false},
 		{Uri: "/blog/xmlrpc-php-security", Scan: false},
 		{Uri: "/app/myconfig.php", Scan: false},
 		{Uri: "/app/config-loader.php", Scan: false},
-		{Uri: "/docs/phpinfo", Scan: false},
+		{Uri: "/docs/phpinfo-tutorial", Scan: false},
+		{Uri: "/docs/using_php_info", Scan: false},
 		{Uri: "/static/configuration.js", Scan: false},
 
 		// Plausible names on a real site, scanners hit them too but the cost

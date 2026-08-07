@@ -174,6 +174,9 @@ var sensitiveFileNames = map[string]struct{}{
 
 	"adminfuns.php":                 {},
 	"adminner.php":                  {},
+	"php_info":                      {},
+	"php_info.php":                  {},
+	"phpinfo":                       {},
 	"phpinfo.php":                   {},
 	"this_is_a_new_hello_world.php": {},
 }
