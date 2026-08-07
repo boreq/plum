@@ -196,10 +196,11 @@ export default defineComponent({
         // Only the summary depends on the selected data point so the series
         // doesn't have to be loaded again.
         selectData(index: number): void {
-            const time = index !== null && index !== undefined && index >= 0 && index < this.series.length
+            const clicked = index !== null && index !== undefined && index >= 0 && index < this.series.length
                 ? this.series[index].time
                 : null;
 
+            const time = clicked === this.selectedTime ? null : clicked;
             if (time === this.selectedTime) {
                 return;
             }
