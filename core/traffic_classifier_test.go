@@ -107,6 +107,8 @@ func TestIsScanRequest(t *testing.T) {
 		{Uri: "/deploy/aws/gcp-credentials.json", Scan: true},
 		{Uri: "/deploy/aws-credentials.txt", Scan: true},
 		{Uri: "/deploy/aws-ses.json", Scan: true},
+		{Uri: "/secrets.json", Scan: true},
+		{Uri: "/config/secrets.json", Scan: true},
 
 		{Uri: "/wp-config.php", Scan: true},
 		{Uri: "/blog/wp-config.php", Scan: true},
@@ -160,6 +162,12 @@ func TestIsScanRequest(t *testing.T) {
 		{Uri: "/test/php_info.php", Scan: true},
 		{Uri: "/php_info", Scan: true},
 		{Uri: "/test/php_info", Scan: true},
+		{Uri: "/php-info.php", Scan: true},
+		{Uri: "/test/php-info.php", Scan: true},
+		{Uri: "/php-info", Scan: true},
+		{Uri: "/test/php-info", Scan: true},
+		{Uri: "/phpinfo.php3", Scan: true},
+		{Uri: "/test/phpinfo.php3", Scan: true},
 
 		{Uri: "/posts/wp-config", Scan: false},
 		{Uri: "/posts/wp-config-php-explained", Scan: false},

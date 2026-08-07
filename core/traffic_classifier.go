@@ -167,6 +167,7 @@ var sensitiveFileNames = map[string]struct{}{
 	"config.json":          {},
 	"config.php":           {},
 	"gcp-credentials.json": {},
+	"secrets.json":         {},
 
 	"wlwmanifest.xml": {},
 	"wp-config.php":   {},
@@ -174,10 +175,13 @@ var sensitiveFileNames = map[string]struct{}{
 
 	"adminfuns.php":                 {},
 	"adminner.php":                  {},
+	"php-info":                      {},
+	"php-info.php":                  {},
 	"php_info":                      {},
 	"php_info.php":                  {},
 	"phpinfo":                       {},
 	"phpinfo.php":                   {},
+	"phpinfo.php3":                  {},
 	"this_is_a_new_hello_world.php": {},
 }
 
