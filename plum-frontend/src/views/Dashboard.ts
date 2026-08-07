@@ -2,9 +2,10 @@ import { defineComponent } from 'vue';
 import { TimePeriod } from '@/dto/TimePeriod';
 import { GroupingType } from '@/dto/GroupingType';
 import { Category, CategoryLabels } from '@/dto/Category';
-import type { RangeData } from '@/dto/Data';
+import type { Data, SeriesPoint } from '@/dto/Data';
 import { FilterDimension, FilterLabels, filtersEqual, type Filter } from '@/dto/Filter';
 import { ApiService } from '@/services/ApiService';
+import { TextService } from '@/services/TextService';
 import CategoryTraffic from '@/components/CategoryTraffic.vue';
 import HitsAndVisits from '@/components/HitsAndVisits.vue';
 import Pages from '@/components/Pages.vue';
@@ -21,7 +22,18 @@ class ActiveFilter {
     value: string;
 }
 
+class Parameters {
+    website: string;
+    timePeriod: TimePeriod;
+    groupingType: GroupingType;
+    filter: Filter;
+    selectedTime: string;
+}
+
 const apiService = new ApiService();
+const textService = new TextService();
+
+const RELOAD_INTERVAL = 5000;
 
 export default defineComponent({
     name: 'Dashboard',
@@ -58,10 +70,11 @@ export default defineComponent({
             selectedWebsite: '',
 
             filter: {} as Filter,
+            selectedTime: null as string,
 
-            data: [] as RangeData[],
-            rangeData: [] as RangeData[],
-            selectedRangeData: null as RangeData,
+            rangeSummary: null as Data,
+            pointSummary: null as Data,
+            series: [] as SeriesPoint[],
 
             timeoutID: null as ReturnType<typeof setTimeout>,
         };
@@ -84,6 +97,22 @@ export default defineComponent({
             return this.filter[FilterDimension.Category] as Category;
         },
 
+        summary(): Data {
+            return this.selectedTime ? this.pointSummary : this.rangeSummary;
+        },
+
+        selectedTimeLabel(): string {
+            return this.selectedTime ? textService.formatDate(this.selectedTime, this.selectedGroupingType) : '';
+        },
+
+        selectedIndex(): number {
+            if (!this.selectedTime) {
+                return null;
+            }
+            const index = this.series.findIndex(v => v.time === this.selectedTime);
+            return index >= 0 ? index : null;
+        },
+
         // Changes whenever a different set of data is loaded. Used as a key so
         // that the tables are recreated and their pagination is reset instead
         // of displaying a page which makes no sense for the new data. Periodic
@@ -97,7 +126,7 @@ export default defineComponent({
                 this.selectedWebsite,
                 this.selectedTimePeriod,
                 this.selectedGroupingType,
-                this.selectedRangeData ? this.selectedRangeData.time : '',
+                this.selectedTime || '',
                 filter,
             ].join('|');
         },
@@ -115,11 +144,13 @@ export default defineComponent({
         selectTimePeriod(timePeriod: TimePeriod): void {
             this.selectedTimePeriod = timePeriod;
             this.selectAppropriateGroupingType(timePeriod);
+            this.selectedTime = null;
             this.reloadData();
         },
 
         selectGroupingType(groupingType: GroupingType): void {
             this.selectedGroupingType = groupingType;
+            this.selectedTime = null;
             this.reloadData();
         },
 
@@ -129,6 +160,18 @@ export default defineComponent({
             }
             this.filter = {...this.filter, [dimension]: value};
             this.filterChanged();
+        },
+
+        removeFilter(dimension: FilterDimension): void {
+            const filter = {...this.filter};
+            delete filter[dimension];
+            this.filter = filter;
+            this.filterChanged();
+        },
+
+        filterChanged(): void {
+            this.selectedTime = null;
+            this.reloadData();
         },
 
         categoryChecked(category: Category): boolean {
@@ -150,25 +193,24 @@ export default defineComponent({
             return value;
         },
 
-        removeFilter(dimension: FilterDimension): void {
-            const filter = {...this.filter};
-            delete filter[dimension];
-            this.filter = filter;
-            this.filterChanged();
-        },
-
-        filterChanged(): void {
-            this.selectedRangeData = null;
-            this.reloadData();
-        },
-
+        // Only the summary depends on the selected data point so the series
+        // doesn't have to be loaded again.
         selectData(index: number): void {
-            if (index !== null && index !== undefined && index >= 0 && index < this.rangeData.length) {
-                this.selectedRangeData = this.rangeData[index];
-            } else {
-                this.selectedRangeData = null;
+            const time = index !== null && index !== undefined && index >= 0 && index < this.series.length
+                ? this.series[index].time
+                : null;
+
+            if (time === this.selectedTime) {
+                return;
             }
-            this.updateSelectedData();
+
+            this.selectedTime = time;
+            this.pointSummary = null;
+            this.updating = true;
+            this.cancelReload();
+
+            const parameters = this.currentParameters();
+            this.loadPoint(parameters).then(() => this.loadFinished(parameters));
         },
 
         groupingTypeAvailable(groupingType: GroupingType): boolean {
@@ -179,7 +221,7 @@ export default defineComponent({
         selectWebsite(website: string): void {
             this.selectedWebsite = website;
             this.filter = {};
-            this.selectedRangeData = null;
+            this.selectedTime = null;
             this.reloadData();
         },
 
@@ -221,85 +263,89 @@ export default defineComponent({
 
         reloadData(): void {
             this.updating = true;
-            this.cancelReload();
-            const timePeriod = this.selectedTimePeriod;
-            const groupingType = this.selectedGroupingType;
-            const selectedWebsite = this.selectedWebsite;
-            const filter = this.filter;
-            apiService.getTimeRange(selectedWebsite, timePeriod, groupingType, filter)
-                .then(response => {
-                    if (!this.parametersUnchanged(selectedWebsite, timePeriod, groupingType, filter)) {
-                        return;
-                    }
-                    this.updating = false;
-                    this.rangeData = response.data;
-                    this.updateSelectedData();
-                    this.scheduleReload(selectedWebsite, timePeriod, groupingType, filter);
-                })
-                .catch(() => {
-                    if (this.parametersUnchanged(selectedWebsite, timePeriod, groupingType, filter)) {
-                        this.updating = false;
-                    }
-                });
+            this.loadData();
         },
 
-        scheduleReload(selectedWebsite: string, timePeriod: TimePeriod, groupingType: GroupingType, filter: Filter): void {
+        reloadLatestData(): void {
+            this.updatingLatest = true;
+            this.loadData();
+        },
+
+        loadData(): void {
             this.cancelReload();
-            this.timeoutID = setTimeout(() => this.reloadLatestData(selectedWebsite, timePeriod, groupingType, filter), 5000);
+
+            const parameters = this.currentParameters();
+            Promise.all([this.loadRange(parameters), this.loadPoint(parameters)])
+                .then(() => this.loadFinished(parameters));
+        },
+
+        loadRange(parameters: Parameters): Promise<void> {
+            return apiService.getTimeRange(parameters.website, parameters.timePeriod, parameters.groupingType, parameters.filter)
+                .then(response => {
+                    if (this.parametersUnchanged(parameters)) {
+                        this.rangeSummary = response.data.summary;
+                        this.series = response.data.series || [];
+                    }
+                })
+                .catch(() => undefined);
+        },
+
+        loadPoint(parameters: Parameters): Promise<void> {
+            if (!parameters.selectedTime) {
+                this.pointSummary = null;
+                return Promise.resolve();
+            }
+
+            return apiService.getTimePoint(parameters.website, parameters.groupingType, parameters.selectedTime, parameters.filter)
+                .then(response => {
+                    if (this.parametersUnchanged(parameters)) {
+                        this.pointSummary = response.data.data;
+                    }
+                })
+                .catch(() => undefined);
+        },
+
+        loadFinished(parameters: Parameters): void {
+            if (!this.parametersUnchanged(parameters)) {
+                return;
+            }
+            this.updating = false;
+            this.updatingLatest = false;
+            this.scheduleReload(parameters);
+        },
+
+        scheduleReload(parameters: Parameters): void {
+            this.cancelReload();
+            this.timeoutID = setTimeout(() => {
+                if (this.parametersUnchanged(parameters)) {
+                    this.reloadLatestData();
+                }
+            }, RELOAD_INTERVAL);
         },
 
         cancelReload(): void {
             if (this.timeoutID) {
                 clearTimeout(this.timeoutID);
+                this.timeoutID = null;
             }
         },
 
-        reloadLatestData(selectedWebsite: string, timePeriod: TimePeriod, groupingType: GroupingType, filter: Filter): void {
-            this.updatingLatest = true;
-            apiService.getTimePoint(selectedWebsite, timePeriod, groupingType, filter)
-                .then(response => {
-                    this.updatingLatest = false;
-                    if (this.parametersUnchanged(selectedWebsite, timePeriod, groupingType, filter)) {
-                        this.updateLatestData(response.data);
-                        this.scheduleReload(selectedWebsite, timePeriod, groupingType, filter);
-                    }
-                })
-                .catch(() => {
-                    this.updatingLatest = false;
-                    if (this.parametersUnchanged(selectedWebsite, timePeriod, groupingType, filter)) {
-                        this.scheduleReload(selectedWebsite, timePeriod, groupingType, filter);
-                    }
-                });
+        currentParameters(): Parameters {
+            return {
+                website: this.selectedWebsite,
+                timePeriod: this.selectedTimePeriod,
+                groupingType: this.selectedGroupingType,
+                filter: this.filter,
+                selectedTime: this.selectedTime,
+            };
         },
 
-        parametersUnchanged(selectedWebsite: string, timePeriod: TimePeriod, groupingType: GroupingType, filter: Filter): boolean {
-            return selectedWebsite === this.selectedWebsite
-                && timePeriod === this.selectedTimePeriod
-                && groupingType === this.selectedGroupingType
-                && filtersEqual(filter, this.filter);
-        },
-
-        updateLatestData(rangeData: RangeData): void {
-            if (this.rangeData.length > 0) {
-                const data = Array.from(this.rangeData);
-                const lastIndex = data.length - 1;
-                if (rangeData.time === data[lastIndex].time) {
-                    data[lastIndex] = rangeData;
-                } else {
-                    data.push(rangeData);
-                    data.shift();
-                }
-                this.rangeData = data;
-                this.updateSelectedData();
-            }
-        },
-
-        updateSelectedData(): void {
-            if (this.selectedRangeData) {
-                this.data = [this.selectedRangeData];
-            } else {
-                this.data = this.rangeData;
-            }
+        parametersUnchanged(parameters: Parameters): boolean {
+            return parameters.website === this.selectedWebsite
+                && parameters.timePeriod === this.selectedTimePeriod
+                && parameters.groupingType === this.selectedGroupingType
+                && parameters.selectedTime === this.selectedTime
+                && filtersEqual(parameters.filter, this.filter);
         },
 
         getAvailableGroupingTypes(timePeriod: TimePeriod): GroupingType[] {

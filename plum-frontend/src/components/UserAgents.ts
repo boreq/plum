@@ -1,13 +1,11 @@
 import { defineComponent, type PropType } from 'vue';
-import type { RangeData } from '@/dto/Data';
+import { namedMetrics, type Data, type NamedMetrics } from '@/dto/Data';
 import { Align, type TableHeader, type TableRow } from '@/dto/Table';
 import { FilterDimension } from '@/dto/Filter';
 import { browserIcon } from '@/dto/Browser';
-import { MetricsService, type NamedMetrics } from '@/services/MetricsService';
 import { TextService } from '@/services/TextService';
 import Table from '@/components/Table.vue';
 
-const metricsService = new MetricsService();
 const textService = new TextService();
 
 export default defineComponent({
@@ -19,8 +17,8 @@ export default defineComponent({
 
     props: {
         data: {
-            type: Array as PropType<RangeData[]>,
-            default: () => [],
+            type: Object as PropType<Data>,
+            default: null,
         },
     },
 
@@ -50,22 +48,20 @@ export default defineComponent({
         },
 
         userAgents(): NamedMetrics[] {
-            return metricsService.group(this.data, v => v.userAgents)
+            return namedMetrics(this.data?.userAgents)
                 .sort((a, b) => a.visits < b.visits ? 1 : -1);
         },
 
         browsers(): Map<string, string> {
             const rv = new Map<string, string>();
-            for (const rangeData of this.data) {
-                if (!rangeData.data || !rangeData.data.userAgents) {
-                    continue;
-                }
-                Object.entries(rangeData.data.userAgents).forEach(([name, metrics]) => {
-                    if (metrics.browser) {
-                        rv.set(name, metrics.browser);
-                    }
-                });
+            if (!this.data || !this.data.userAgents) {
+                return rv;
             }
+            Object.entries(this.data.userAgents).forEach(([name, metrics]) => {
+                if (metrics.browser) {
+                    rv.set(name, metrics.browser);
+                }
+            });
             return rv;
         },
 

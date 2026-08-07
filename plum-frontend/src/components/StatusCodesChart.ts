@@ -1,6 +1,6 @@
 import { defineComponent, markRaw, type PropType } from 'vue';
-import type { Data, Dictionary, RangeData } from '@/dto/Data';
-import { ChartColors } from '@/dto/ChartColors';
+import type { Dictionary, SeriesPoint } from '@/dto/Data';
+import { ChartColors, dimmed } from '@/dto/ChartColors';
 import { TextService } from '@/services/TextService';
 import { GroupingType } from '@/dto/GroupingType';
 import { ChartAnimation } from '@/dto/ChartAnimation';
@@ -13,6 +13,14 @@ class ChartData {
 
 type BarChart = Chart<'bar', number[], string>;
 
+const STATUS_COLORS = [
+    ChartColors.Blue,
+    ChartColors.Green,
+    ChartColors.Violet,
+    ChartColors.Orange,
+    ChartColors.Red,
+];
+
 const textService = new TextService();
 
 export default defineComponent({
@@ -20,8 +28,12 @@ export default defineComponent({
 
     props: {
         data: {
-            type: Array as PropType<RangeData[]>,
+            type: Array as PropType<SeriesPoint[]>,
             default: () => [],
+        },
+        selectedIndex: {
+            type: Number as PropType<number>,
+            default: null,
         },
         groupingType: {
             type: Number as PropType<GroupingType>,
@@ -39,6 +51,9 @@ export default defineComponent({
 
     watch: {
         data(): void {
+            this.redraw();
+        },
+        selectedIndex(): void {
             this.redraw();
         },
     },
@@ -60,25 +75,13 @@ export default defineComponent({
                 return;
             }
 
-            const chartData: ChartData[] = this.data.map(rangeData => {
+            const chartData: ChartData[] = this.data.map(point => {
                 return {
-                    label: textService.formatDate(rangeData.time, this.groupingType),
-                    statuses: this.groupByStatusType(rangeData.data),
+                    label: textService.formatDate(point.time, this.groupingType),
+                    statuses: point.statuses || {},
                 };
             });
             this.drawChart(chartData);
-        },
-
-        groupByStatusType(data: Data): Dictionary<number> {
-            const rv: Dictionary<number> = {};
-            if (!data || !data.statuses) {
-                return rv;
-            }
-            Object.entries(data.statuses).forEach(([status, metrics]) => {
-                const statusType = this.toStatusString(status);
-                rv[statusType] = (rv[statusType] || 0) + metrics.hits;
-            });
-            return rv;
         },
 
         toStatusString(status: string): string {
@@ -120,6 +123,10 @@ export default defineComponent({
                 statusDatas[datasetIndex].forEach((value, statusIndex) => {
                     this.chart.data.datasets[datasetIndex].data[statusIndex] = value;
                 });
+                const color = STATUS_COLORS[datasetIndex];
+                this.chart.data.datasets[datasetIndex].backgroundColor = statusDatas[datasetIndex].map((_, index) => {
+                    return this.selectedIndex === null || this.selectedIndex === index ? color : dimmed(color);
+                });
             }
             this.chart.update();
         },
@@ -129,13 +136,9 @@ export default defineComponent({
                 type: 'bar',
                 data: {
                     labels: [],
-                    datasets: [
-                        this.createDataset('1xx', ChartColors.Blue),
-                        this.createDataset('2xx', ChartColors.Green),
-                        this.createDataset('3xx', ChartColors.Violet),
-                        this.createDataset('4xx', ChartColors.Orange),
-                        this.createDataset('5xx', ChartColors.Red),
-                    ],
+                    datasets: STATUS_COLORS.map((color, index) => {
+                        return this.createDataset(this.toStatusString((index + 1).toString()), color);
+                    }),
                 },
                 options: {
                     maintainAspectRatio: false,

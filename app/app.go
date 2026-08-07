@@ -36,7 +36,35 @@ func New(repositories *core.Repositories) *Application {
 	}
 }
 
-type RangeData struct {
+type PointResult struct {
 	Time time.Time
 	Data *core.Summary
+}
+
+type RangeResult struct {
+	Summary *core.Summary
+	Series  []SeriesPoint
+}
+
+type SeriesPoint struct {
+	Time     time.Time
+	Visits   int
+	Hits     int
+	Bytes    int
+	Statuses map[string]int
+}
+
+func NewSeriesPoint(t time.Time, summary *core.Summary) SeriesPoint {
+	statuses := make(map[string]int, len(summary.Statuses))
+	for status, metrics := range summary.Statuses {
+		statuses[status] = metrics.Hits
+	}
+
+	return SeriesPoint{
+		Time:     t,
+		Visits:   summary.Visits.Size(),
+		Hits:     summary.Hits,
+		Bytes:    summary.BodyBytesSent,
+		Statuses: statuses,
+	}
 }

@@ -54,8 +54,12 @@
               </a>
           </div>
 
-          <div class="box box-dimmed" v-if="selectedRangeData">
-              <a title="Click to cancel." v-on:click="selectData(null)">You are inspecting a single data point.</a>
+          <div class="box box-dimmed" v-if="selectedTime">
+              <a class="active"
+                 title="Click to stop inspecting this data point."
+                 v-on:click="selectData(null)">
+                  Data point: {{ selectedTimeLabel }}
+              </a>
           </div>
 
           <div class="box box-dimmed" v-if="updating || updatingLatest">
@@ -65,56 +69,56 @@
 
       <div class="grid" :class="{ updating: updating }">
           <div class="box box-inversed malicious-traffic">
-              <CategoryTraffic :data="data"
+              <CategoryTraffic :data="summary"
                                :category="Category.Malicious"
                                :checked="categoryChecked(Category.Malicious)"
                                :active="selectedCategory === Category.Malicious"
                                v-on:filter="toggleCategory"></CategoryTraffic>
           </div>
           <div class="box box-inversed automated-traffic">
-              <CategoryTraffic :data="data"
+              <CategoryTraffic :data="summary"
                                :category="Category.Automated"
                                :checked="categoryChecked(Category.Automated)"
                                :active="selectedCategory === Category.Automated"
                                v-on:filter="toggleCategory"></CategoryTraffic>
           </div>
           <div class="box box-inversed possibly-automated-traffic">
-              <CategoryTraffic :data="data"
+              <CategoryTraffic :data="summary"
                                :category="Category.PossiblyAutomated"
                                :checked="categoryChecked(Category.PossiblyAutomated)"
                                :active="selectedCategory === Category.PossiblyAutomated"
                                v-on:filter="toggleCategory"></CategoryTraffic>
           </div>
           <div class="box box-inversed unclassified-traffic">
-              <CategoryTraffic :data="data"
+              <CategoryTraffic :data="summary"
                                :category="Category.Unclassified"
                                :checked="categoryChecked(Category.Unclassified)"
                                :active="selectedCategory === Category.Unclassified"
                                v-on:filter="toggleCategory"></CategoryTraffic>
           </div>
           <div class="box box-normal hits-and-visits">
-              <HitsAndVisits :data="data" :groupingType="selectedGroupingType" v-on:select-data="selectData($event)"></HitsAndVisits>
+              <HitsAndVisits :data="series" :selectedIndex="selectedIndex" :groupingType="selectedGroupingType" v-on:select-data="selectData($event)"></HitsAndVisits>
           </div>
           <div class="box box-normal pages">
-              <Pages :key="tableKey" :data="data" v-on:filter="addFilter"></Pages>
+              <Pages :key="tableKey" :data="summary" v-on:filter="addFilter"></Pages>
           </div>
           <div class="box box-normal referers">
-              <Referers :key="tableKey" :data="data" v-on:filter="addFilter"></Referers>
+              <Referers :key="tableKey" :data="summary" v-on:filter="addFilter"></Referers>
           </div>
           <div class="box box-normal user-agents">
-              <UserAgents :key="tableKey" :data="data" v-on:filter="addFilter"></UserAgents>
+              <UserAgents :key="tableKey" :data="summary" v-on:filter="addFilter"></UserAgents>
           </div>
           <div class="box box-normal bytes-sent-chart">
-              <BytesSentChart :data="data" :groupingType="selectedGroupingType" v-on:select-data="selectData($event)"></BytesSentChart>
+              <BytesSentChart :data="series" :selectedIndex="selectedIndex" :groupingType="selectedGroupingType" v-on:select-data="selectData($event)"></BytesSentChart>
           </div>
           <div class="box box-normal bytes-sent">
-              <BytesSent :key="tableKey" :data="data" v-on:filter="addFilter"></BytesSent>
+              <BytesSent :key="tableKey" :data="summary" v-on:filter="addFilter"></BytesSent>
           </div>
           <div class="box box-normal status-codes-chart">
-              <StatusCodesChart :data="data" :groupingType="selectedGroupingType" v-on:select-data="selectData($event)"></StatusCodesChart>
+              <StatusCodesChart :data="series" :selectedIndex="selectedIndex" :groupingType="selectedGroupingType" v-on:select-data="selectData($event)"></StatusCodesChart>
           </div>
           <div class="box box-normal status-codes">
-              <StatusCodes :key="tableKey" :data="data" v-on:filter="addFilter"></StatusCodes>
+              <StatusCodes :key="tableKey" :data="summary" v-on:filter="addFilter"></StatusCodes>
           </div>
       </div>
   </div>

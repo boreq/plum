@@ -1,6 +1,6 @@
 import { defineComponent, markRaw, type PropType } from 'vue';
-import type { RangeData } from '@/dto/Data';
-import { ChartColors } from '@/dto/ChartColors';
+import type { SeriesPoint } from '@/dto/Data';
+import { ChartColors, dimmed } from '@/dto/ChartColors';
 import { TextService } from '@/services/TextService';
 import { GroupingType } from '@/dto/GroupingType';
 import { ChartAnimation } from '@/dto/ChartAnimation';
@@ -21,8 +21,12 @@ export default defineComponent({
 
     props: {
         data: {
-            type: Array as PropType<RangeData[]>,
+            type: Array as PropType<SeriesPoint[]>,
             default: () => [],
+        },
+        selectedIndex: {
+            type: Number as PropType<number>,
+            default: null,
         },
         groupingType: {
             type: Number as PropType<GroupingType>,
@@ -40,6 +44,9 @@ export default defineComponent({
 
     watch: {
         data(): void {
+            this.redraw();
+        },
+        selectedIndex(): void {
             this.redraw();
         },
     },
@@ -62,11 +69,11 @@ export default defineComponent({
             }
 
             const chartData: ChartData[] = this.data
-                .map(rangeData => {
+                .map(point => {
                     return {
-                        label: textService.formatDate(rangeData.time, this.groupingType),
-                        hits: rangeData.data.hits,
-                        visits: rangeData.data.visits,
+                        label: textService.formatDate(point.time, this.groupingType),
+                        hits: point.hits,
+                        visits: point.visits,
                     };
                 });
             this.drawChart(chartData);
@@ -110,7 +117,16 @@ export default defineComponent({
                 this.chart.data.datasets[1].data[index] = value;
             });
 
+            this.chart.data.datasets[0].backgroundColor = this.barColors(ChartColors.Primary, visits.length);
+            this.chart.data.datasets[1].backgroundColor = this.barColors(ChartColors.Secondary, hits.length);
+
             this.chart.update();
+        },
+
+        barColors(color: string, count: number): string[] {
+            return Array.from({length: count}, (_, index) => {
+                return this.selectedIndex === null || this.selectedIndex === index ? color : dimmed(color);
+            });
         },
 
         createChart(): BarChart {

@@ -51,6 +51,30 @@ func getOrCreateUserAgentMetrics(target map[string]*UserAgentMetrics, userAgent 
 	return &userAgentMetrics.Metrics
 }
 
+func (s *Summary) Merge(other *Summary) {
+	s.Metrics.Add(other.Metrics, "")
+
+	for category, metrics := range other.Categories {
+		getOrCreateMetrics(s.Categories, category).Add(*metrics, "")
+	}
+
+	for uri, metrics := range other.Uris {
+		getOrCreateMetrics(s.Uris, uri).Add(*metrics, "")
+	}
+
+	for status, metrics := range other.Statuses {
+		getOrCreateMetrics(s.Statuses, status).Add(*metrics, "")
+	}
+
+	for referer, metrics := range other.Referers {
+		getOrCreateMetrics(s.Referers, referer).Add(*metrics, "")
+	}
+
+	for userAgent, userAgentMetrics := range other.UserAgents {
+		getOrCreateUserAgentMetrics(s.UserAgents, userAgent, userAgentMetrics.Browser).Add(userAgentMetrics.Metrics, "")
+	}
+}
+
 func (s *Summary) InsertCategoryLeaf(category Category, metrics Metrics, visitPrefix string) {
 	getOrCreateMetrics(s.Categories, category).Add(metrics, visitPrefix)
 }

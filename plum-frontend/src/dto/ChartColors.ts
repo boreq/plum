@@ -8,3 +8,7 @@ export enum ChartColors {
     Orange = '#e67e22',
     Red = '#e74c3c',
 }
+
+export function dimmed(color: string): string {
+    return color + '40';
+}

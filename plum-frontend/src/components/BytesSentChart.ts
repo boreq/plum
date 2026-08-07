@@ -1,6 +1,6 @@
 import { defineComponent, markRaw, type PropType } from 'vue';
-import type { RangeData } from '@/dto/Data';
-import { ChartColors } from '@/dto/ChartColors';
+import type { SeriesPoint } from '@/dto/Data';
+import { ChartColors, dimmed } from '@/dto/ChartColors';
 import { TextService } from '@/services/TextService';
 import { GroupingType } from '@/dto/GroupingType';
 import { ChartAnimation } from '@/dto/ChartAnimation';
@@ -20,8 +20,12 @@ export default defineComponent({
 
     props: {
         data: {
-            type: Array as PropType<RangeData[]>,
+            type: Array as PropType<SeriesPoint[]>,
             default: () => [],
+        },
+        selectedIndex: {
+            type: Number as PropType<number>,
+            default: null,
         },
         groupingType: {
             type: Number as PropType<GroupingType>,
@@ -39,6 +43,9 @@ export default defineComponent({
 
     watch: {
         data(): void {
+            this.redraw();
+        },
+        selectedIndex(): void {
             this.redraw();
         },
     },
@@ -61,10 +68,10 @@ export default defineComponent({
             }
 
             const chartData: ChartData[] = this.data
-                .map(rangeData => {
+                .map(point => {
                     return {
-                        label: textService.formatDate(rangeData.time, this.groupingType),
-                        bytes: rangeData.data.bytes,
+                        label: textService.formatDate(point.time, this.groupingType),
+                        bytes: point.bytes,
                     };
                 });
             this.drawChart(chartData);
@@ -94,6 +101,14 @@ export default defineComponent({
             bytes.forEach((value, i) => {
                 this.chart.data.datasets[0].data[i] = value;
             });
+
+            this.chart.data.datasets[0].pointBackgroundColor = bytes.map((_, i) => {
+                return this.selectedIndex === null || this.selectedIndex === i
+                    ? ChartColors.Primary
+                    : dimmed(ChartColors.Primary);
+            });
+            this.chart.data.datasets[0].pointRadius = bytes.map((_, i) => this.selectedIndex === i ? 5 : 3);
+
             this.chart.update();
         },
 

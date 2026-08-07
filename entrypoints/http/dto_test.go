@@ -12,18 +12,16 @@ import (
 	"github.com/boreq/plum/parser"
 )
 
-// Entries which are older than the retention period are not inserted at all so
-// this has to be a recent point in time.
-var entryTime = time.Now().UTC().Add(-time.Hour)
+var rangeEntryTime = time.Now().UTC().Truncate(24 * time.Hour).Add(-12 * time.Hour)
 
-func TestNewRangeDataJSON(t *testing.T) {
+func TestNewRangeResultJSON(t *testing.T) {
 	repository := core.NewRepository(config.Website{})
 
 	entries := []*parser.Entry{
 		{
 			RemoteAddress:  "1.2.3.4",
 			UserAgent:      "user agent",
-			Time:           entryTime,
+			Time:           rangeEntryTime,
 			HttpRequestURI: "/index.html",
 			Status:         "200",
 			BodyBytesSent:  100,
@@ -32,20 +30,11 @@ func TestNewRangeDataJSON(t *testing.T) {
 		{
 			RemoteAddress:  "1.2.3.4",
 			UserAgent:      "user agent",
-			Time:           entryTime,
-			HttpRequestURI: "/index.html",
+			Time:           rangeEntryTime.Add(time.Hour),
+			HttpRequestURI: "/other.html",
 			Status:         "404",
 			BodyBytesSent:  50,
 			Referer:        "example.com",
-		},
-		{
-			RemoteAddress:  "5.6.7.8",
-			UserAgent:      "other agent",
-			Time:           entryTime,
-			HttpRequestURI: "/index.html",
-			Status:         "200",
-			BodyBytesSent:  100,
-			Referer:        "other.example.com",
 		},
 	}
 
@@ -55,21 +44,26 @@ func TestNewRangeDataJSON(t *testing.T) {
 		}
 	}
 
-	data, ok := repository.RetrieveHour(entryTime.Year(), entryTime.Month(), entryTime.Day(), entryTime.Hour(), core.Filter{})
-	if !ok {
-		t.Fatal("retrieve failed")
+	var series []app.SeriesPoint
+	summary := core.NewSummary()
+
+	for _, t2 := range []time.Time{rangeEntryTime, rangeEntryTime.Add(time.Hour)} {
+		data, ok := repository.RetrieveHour(t2.Year(), t2.Month(), t2.Day(), t2.Hour(), core.Filter{})
+		if !ok {
+			t.Fatal("retrieve failed")
+		}
+		series = append(series, app.NewSeriesPoint(t2.Truncate(time.Hour), data))
+		summary.Merge(data)
 	}
 
-	j, err := json.Marshal(NewRangeData(app.RangeData{
-		Time: entryTime.Truncate(time.Hour),
-		Data: data,
-	}))
+	j, err := json.Marshal(NewRangeResult(app.RangeResult{Summary: summary, Series: series}))
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}
 
-	expected := fmt.Sprintf(`{"time":"%s","data":{"visits":2,"hits":3,"bytes":250,"categories":{"automated":{"visits":0,"hits":0,"bytes":0},"malicious":{"visits":0,"hits":0,"bytes":0},"possibly-automated":{"visits":0,"hits":0,"bytes":0},"unclassified":{"visits":2,"hits":3,"bytes":250}},"uris":{"/index.html":{"visits":2,"hits":3,"bytes":250}},"statuses":{"200":{"visits":2,"hits":2,"bytes":200},"404":{"visits":1,"hits":1,"bytes":50}},"referers":{"example.com":{"visits":1,"hits":2,"bytes":150},"other.example.com":{"visits":1,"hits":1,"bytes":100}},"userAgents":{"other agent":{"visits":1,"hits":1,"bytes":100,"browser":""},"user agent":{"visits":1,"hits":2,"bytes":150,"browser":""}}}}`,
-		entryTime.Truncate(time.Hour).Format(time.RFC3339))
+	expected := fmt.Sprintf(`{"summary":{"visits":1,"hits":2,"bytes":150,"categories":{"automated":{"visits":0,"hits":0,"bytes":0},"malicious":{"visits":0,"hits":0,"bytes":0},"possibly-automated":{"visits":0,"hits":0,"bytes":0},"unclassified":{"visits":1,"hits":2,"bytes":150}},"uris":{"/index.html":{"visits":1,"hits":1,"bytes":100},"/other.html":{"visits":1,"hits":1,"bytes":50}},"statuses":{"200":{"visits":1,"hits":1,"bytes":100},"404":{"visits":1,"hits":1,"bytes":50}},"referers":{"example.com":{"visits":1,"hits":2,"bytes":150}},"userAgents":{"user agent":{"visits":1,"hits":2,"bytes":150,"browser":""}}},"series":[{"time":"%s","visits":1,"hits":1,"bytes":100,"statuses":{"2xx":1}},{"time":"%s","visits":1,"hits":1,"bytes":50,"statuses":{"4xx":1}}]}`,
+		rangeEntryTime.Truncate(time.Hour).Format(time.RFC3339),
+		rangeEntryTime.Add(time.Hour).Truncate(time.Hour).Format(time.RFC3339))
 
 	if string(j) != expected {
 		t.Fatalf("\n got: %s\nwant: %s", string(j), expected)

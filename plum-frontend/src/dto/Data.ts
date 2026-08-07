@@ -20,7 +20,41 @@ export interface Data extends Metrics {
     userAgents: Dictionary<UserAgentMetrics>;
 }
 
-export interface RangeData {
+export interface PointResult {
     time: string;
     data: Data;
+}
+
+export interface SeriesPoint extends Metrics {
+    time: string;
+    statuses: Dictionary<number>;
+}
+
+export interface RangeResult {
+    summary: Data;
+    series: SeriesPoint[];
+}
+
+export const emptyMetrics: Metrics = {
+    visits: 0,
+    hits: 0,
+    bytes: 0,
+};
+
+export interface NamedMetrics extends Metrics {
+    name: string;
+}
+
+export function namedMetrics(dimension: Dictionary<Metrics>): NamedMetrics[] {
+    if (!dimension) {
+        return [];
+    }
+    return Object.entries(dimension).map(([name, metrics]) => {
+        return {
+            name: name,
+            visits: metrics.visits,
+            hits: metrics.hits,
+            bytes: metrics.bytes,
+        };
+    });
 }

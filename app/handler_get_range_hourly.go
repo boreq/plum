@@ -22,20 +22,25 @@ func NewGetRangeHourlyHandler(repositories *core.Repositories) *GetRangeHourlyHa
 	}
 }
 
-func (h *GetRangeHourlyHandler) Execute(query GetRangeHourly) ([]RangeData, error) {
+func (h *GetRangeHourlyHandler) Execute(query GetRangeHourly) (RangeResult, error) {
 	repository, ok := h.repositories.Get(query.Website)
 	if !ok {
-		return nil, ErrWebsiteNotFound
+		return RangeResult{}, ErrWebsiteNotFound
 	}
 
-	var rv []RangeData
+	summary := core.NewSummary()
+
+	var series []SeriesPoint
 	for hour := query.From; !hour.After(query.To); hour = hour.Next() {
-		summary, ok := repository.RetrieveHour(hour.Year(), hour.Month(), hour.Day(), hour.Hour(), query.Filter)
+		hourSummary, ok := repository.RetrieveHour(hour.Year(), hour.Month(), hour.Day(), hour.Hour(), query.Filter)
 		if !ok {
-			return nil, errors.Wrap(ErrDataNotFound, "could not retrieve the hour")
+			return RangeResult{}, errors.Wrap(ErrDataNotFound, "could not retrieve the hour")
 		}
-		rv = append(rv, RangeData{Time: hour.StartingPoint(), Data: summary})
+
+		series = append(series, NewSeriesPoint(hour.StartingPoint(), hourSummary))
+
+		summary.Merge(hourSummary)
 	}
 
-	return rv, nil
+	return RangeResult{Summary: summary, Series: series}, nil
 }

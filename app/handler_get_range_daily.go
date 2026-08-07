@@ -22,20 +22,25 @@ func NewGetRangeDailyHandler(repositories *core.Repositories) *GetRangeDailyHand
 	}
 }
 
-func (h *GetRangeDailyHandler) Execute(query GetRangeDaily) ([]RangeData, error) {
+func (h *GetRangeDailyHandler) Execute(query GetRangeDaily) (RangeResult, error) {
 	repository, ok := h.repositories.Get(query.Website)
 	if !ok {
-		return nil, ErrWebsiteNotFound
+		return RangeResult{}, ErrWebsiteNotFound
 	}
 
-	var rv []RangeData
+	summary := core.NewSummary()
+
+	var series []SeriesPoint
 	for day := query.From; !day.After(query.To); day = day.Next() {
-		summary, ok := repository.RetrieveDay(day.Year(), day.Month(), day.Day(), query.Filter)
+		daySummary, ok := repository.RetrieveDay(day.Year(), day.Month(), day.Day(), query.Filter)
 		if !ok {
-			return nil, errors.Wrap(ErrDataNotFound, "could not retrieve the day")
+			return RangeResult{}, errors.Wrap(ErrDataNotFound, "could not retrieve the day")
 		}
-		rv = append(rv, RangeData{Time: day.StartingPoint(), Data: summary})
+
+		series = append(series, NewSeriesPoint(day.StartingPoint(), daySummary))
+
+		summary.Merge(daySummary)
 	}
 
-	return rv, nil
+	return RangeResult{Summary: summary, Series: series}, nil
 }

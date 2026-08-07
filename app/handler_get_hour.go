@@ -21,16 +21,16 @@ func NewGetHourHandler(repositories *core.Repositories) *GetHourHandler {
 	}
 }
 
-func (h *GetHourHandler) Execute(query GetHour) (RangeData, error) {
+func (h *GetHourHandler) Execute(query GetHour) (PointResult, error) {
 	repository, ok := h.repositories.Get(query.Website)
 	if !ok {
-		return RangeData{}, ErrWebsiteNotFound
+		return PointResult{}, ErrWebsiteNotFound
 	}
 
 	summary, ok := repository.RetrieveHour(query.Hour.Year(), query.Hour.Month(), query.Hour.Day(), query.Hour.Hour(), query.Filter)
 	if !ok {
-		return RangeData{}, errors.Wrap(ErrDataNotFound, "could not retrieve the hour")
+		return PointResult{}, errors.Wrap(ErrDataNotFound, "could not retrieve the hour")
 	}
 
-	return RangeData{Time: query.Hour.StartingPoint(), Data: summary}, nil
+	return PointResult{Time: query.Hour.StartingPoint(), Data: summary}, nil
 }

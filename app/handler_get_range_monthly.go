@@ -22,20 +22,25 @@ func NewGetRangeMonthlyHandler(repositories *core.Repositories) *GetRangeMonthly
 	}
 }
 
-func (h *GetRangeMonthlyHandler) Execute(query GetRangeMonthly) ([]RangeData, error) {
+func (h *GetRangeMonthlyHandler) Execute(query GetRangeMonthly) (RangeResult, error) {
 	repository, ok := h.repositories.Get(query.Website)
 	if !ok {
-		return nil, ErrWebsiteNotFound
+		return RangeResult{}, ErrWebsiteNotFound
 	}
 
-	var rv []RangeData
+	summary := core.NewSummary()
+
+	var series []SeriesPoint
 	for month := query.From; !month.After(query.To); month = month.Next() {
-		summary, ok := repository.RetrieveMonth(month.Year(), month.Month(), query.Filter)
+		monthSummary, ok := repository.RetrieveMonth(month.Year(), month.Month(), query.Filter)
 		if !ok {
-			return nil, errors.Wrap(ErrDataNotFound, "could not retrieve the month")
+			return RangeResult{}, errors.Wrap(ErrDataNotFound, "could not retrieve the month")
 		}
-		rv = append(rv, RangeData{Time: month.StartingPoint(), Data: summary})
+
+		series = append(series, NewSeriesPoint(month.StartingPoint(), monthSummary))
+
+		summary.Merge(monthSummary)
 	}
 
-	return rv, nil
+	return RangeResult{Summary: summary, Series: series}, nil
 }

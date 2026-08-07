@@ -7,9 +7,20 @@ import (
 	"github.com/boreq/plum/core"
 )
 
-type RangeData struct {
+type PointResult struct {
 	Time time.Time `json:"time"`
 	Data Data      `json:"data"`
+}
+
+type RangeResult struct {
+	Summary Data          `json:"summary"`
+	Series  []SeriesPoint `json:"series"`
+}
+
+type SeriesPoint struct {
+	Time time.Time `json:"time"`
+	Metrics
+	Statuses map[string]int `json:"statuses"`
 }
 
 type Data struct {
@@ -32,19 +43,43 @@ type Metrics struct {
 	BodyBytesSent int `json:"bytes"`
 }
 
-func NewRangeData(rangeData app.RangeData) RangeData {
-	return RangeData{
-		Time: rangeData.Time,
-		Data: newData(rangeData.Data),
+func NewPointResult(pointResult app.PointResult) PointResult {
+	return PointResult{
+		Time: pointResult.Time,
+		Data: newData(pointResult.Data),
 	}
 }
 
-func NewRangeDataSlice(rangeData []app.RangeData) []RangeData {
-	rv := make([]RangeData, 0, len(rangeData))
-	for _, v := range rangeData {
-		rv = append(rv, NewRangeData(v))
+func NewRangeResult(rangeResult app.RangeResult) RangeResult {
+	series := make([]SeriesPoint, 0, len(rangeResult.Series))
+	for _, v := range rangeResult.Series {
+		series = append(series, newSeriesPoint(v))
 	}
-	return rv
+
+	return RangeResult{
+		Summary: newData(rangeResult.Summary),
+		Series:  series,
+	}
+}
+
+func newSeriesPoint(seriesPoint app.SeriesPoint) SeriesPoint {
+	statuses := make(map[string]int)
+	for status, hits := range seriesPoint.Statuses {
+		if status == "" {
+			continue
+		}
+		statuses[status[:1]+"xx"] += hits
+	}
+
+	return SeriesPoint{
+		Time: seriesPoint.Time,
+		Metrics: Metrics{
+			Visits:        seriesPoint.Visits,
+			Hits:          seriesPoint.Hits,
+			BodyBytesSent: seriesPoint.Bytes,
+		},
+		Statuses: statuses,
+	}
 }
 
 func newData(summary *core.Summary) Data {
