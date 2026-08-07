@@ -121,27 +121,16 @@ var scanUris = map[string]struct{}{
 	"/actuator/env":               {},
 	"/api/v1/login":               {},
 	"/api/v1/auto_login":          {},
-	"/appsettings.json":           {},
-	"/aws-ses.json":               {},
-	"/aws-credentials.txt":        {},
-	"/gcp-credentials.json":       {},
-	"/config.json":                {},
 	"/debug/default/view":         {},
 	"/phpmyadmin":                 {},
 	"/server-status":              {},
 	"/telescope/requests":         {},
 
-	"/wp-config.php":                                    {},
-	"/blog/wp-config.php":                               {},
 	"/wp-admin/install.php":                             {},
 	"/wp-admin/install.php?step=1":                      {},
 	"/wp-content/plugins/hellopress/wp_filemanager.php": {},
 	"/wp-json/batch/v1":                                 {},
 	"/?rest_route=/batch/v1":                            {},
-
-	"/adminfuns.php":                 {},
-	"/adminner.php":                  {},
-	"/this_is_a_new_hello_world.php": {},
 }
 
 var scanRules = []func(r scanRequest) bool{
@@ -154,41 +143,51 @@ var scanRules = []func(r scanRequest) bool{
 	containsInjection,
 }
 
-var (
-	sensitiveFileExtensions = []string{
-		".env",
-		".conf",
-		".ini",
-		".yml",
-		".yaml",
-		".sql",
-		".bak",
-		".old",
-		".swp",
-		".pem",
-		".key",
-		".log",
-	}
+var sensitiveFileExtensions = []string{
+	".env",
+	".conf",
+	".ini",
+	".yml",
+	".yaml",
+	".sql",
+	".bak",
+	".old",
+	".swp",
+	".pem",
+	".key",
+	".log",
+}
 
-	wordPressIncludeDirectories = []string{
-		"wp-includes",
-	}
+var sensitiveFileNames = map[string]struct{}{
+	"appsettings.json":     {},
+	"aws-credentials.txt":  {},
+	"aws-ses.json":         {},
+	"config.json":          {},
+	"config.php":           {},
+	"gcp-credentials.json": {},
 
-	wordPressProbeFiles = []string{
-		"wlwmanifest.xml",
-		"wp-config.php",
-		"xmlrpc.php",
-	}
+	"wlwmanifest.xml": {},
+	"wp-config.php":   {},
+	"xmlrpc.php":      {},
 
-	injectionMarkers = []string{
-		"$(",
-		"${",
-		"`",
-		"cmd=",
-		"<",
-		">",
-	}
-)
+	"adminfuns.php":                 {},
+	"adminner.php":                  {},
+	"phpinfo.php":                   {},
+	"this_is_a_new_hello_world.php": {},
+}
+
+var wordPressIncludeDirectories = []string{
+	"wp-includes",
+}
+
+var injectionMarkers = []string{
+	"$(",
+	"${",
+	"`",
+	"cmd=",
+	"<",
+	">",
+}
 
 type requestCounters struct {
 	Malicious int
@@ -481,12 +480,6 @@ func requestsHiddenFile(r scanRequest) bool {
 }
 
 func requestsWordPressProbe(r scanRequest) bool {
-	for _, file := range wordPressProbeFiles {
-		if r.FileName == file {
-			return true
-		}
-	}
-
 	if !strings.HasSuffix(r.FileName, ".php") {
 		return false
 	}
@@ -518,6 +511,10 @@ func requestsNumberedScript(r scanRequest) bool {
 }
 
 func requestsSensitiveFile(r scanRequest) bool {
+	if _, ok := sensitiveFileNames[r.FileName]; ok {
+		return true
+	}
+
 	for _, extension := range sensitiveFileExtensions {
 		if strings.HasSuffix(r.FileName, extension) {
 			return true
