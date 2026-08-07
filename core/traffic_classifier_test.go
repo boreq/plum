@@ -261,6 +261,8 @@ func TestRemoveOldDataDiscardsAddresses(t *testing.T) {
 	}
 }
 
+var classifyReferenceTime = time.Date(2026, time.August, 7, 0, 0, 0, 0, time.UTC)
+
 func TestClassifyUserAgentName(t *testing.T) {
 	testCases := []struct {
 		UserAgent string
@@ -280,7 +282,7 @@ func TestClassifyUserAgentName(t *testing.T) {
 		},
 		{
 			UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.119 Safari/537.36",
-			Category:  CategoryUnclassified,
+			Category:  CategoryPossiblyAutomated,
 		},
 		{
 			UserAgent: "Googlebot-Image/1.0",
@@ -417,35 +419,35 @@ func TestClassifyUserAgentName(t *testing.T) {
 		},
 		{
 			UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 OPR/101.0.0.0",
-			Category:  CategoryUnclassified,
+			Category:  CategoryPossiblyAutomated,
 		},
 		{
 			UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/52.0.2743.116 Safari/537.36 Edge/15.15063",
-			Category:  CategoryUnclassified,
+			Category:  CategoryPossiblyAutomated,
 		},
 		{
 			UserAgent: "Mozilla/5.0 (Windows NT 5.1; rv:38.0) Gecko/20100101 Firefox/38.0 SeaMonkey/2.35",
-			Category:  CategoryUnclassified,
+			Category:  CategoryPossiblyAutomated,
 		},
 		{
 			UserAgent: "Mozilla/5.0 (Maemo; Linux armv7l; rv:10.0.1) Gecko/20100101 Firefox/10.0.1 Fennec/10.0.1",
-			Category:  CategoryUnclassified,
+			Category:  CategoryPossiblyAutomated,
 		},
 		{
 			UserAgent: "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36 TungstenBrowser/2.0",
-			Category:  CategoryUnclassified,
+			Category:  CategoryPossiblyAutomated,
 		},
 		{
 			UserAgent: "Mozilla/5.0 (Linux; Android 9; HRY-LX1 Build/HONORHRY-L21) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.93 Mobile Safari/537.36 YaApp_Android/10.20 YaSearchBrowser/10.20",
-			Category:  CategoryUnclassified,
+			Category:  CategoryPossiblyAutomated,
 		},
 		{
 			UserAgent: "Mozilla/5.0 (Linux; Android 8.1.0; M1813 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/66.0.3359.126 MQQBrowser/6.2 TBS/045018 Mobile Safari/537.36 MMWEBID/5434 MicroMessenger/7.0.9.1560(0x27000935) Process/tools NetType/4G Language/zh_CN ABI/arm64",
-			Category:  CategoryUnclassified,
+			Category:  CategoryPossiblyAutomated,
 		},
 		{
 			UserAgent: "Mozilla/5.0 (Linux; Android 7.1.2; Redmi 5 Build/N2G47H; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/63.0.3239.83 Mobile Safari/537.36 T7/11.3 baiduboxapp/11.3.6.11 (Baidu; P1 7.1.2)",
-			Category:  CategoryUnclassified,
+			Category:  CategoryPossiblyAutomated,
 		},
 		{
 			UserAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; WOW64; rv:41.0) Gecko/20100101 Firefox/140.0.2 (x64 de)",
@@ -457,7 +459,7 @@ func TestClassifyUserAgentName(t *testing.T) {
 		},
 		{
 			UserAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/120.0.6099.119 Mobile/15E148 Safari/604.1",
-			Category:  CategoryUnclassified,
+			Category:  CategoryPossiblyAutomated,
 		},
 
 		{
@@ -533,7 +535,7 @@ func TestClassifyUserAgentName(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.UserAgent, func(t *testing.T) {
-			if category := classifyUserAgent(testCase.UserAgent); category != testCase.Category {
+			if category := classifyUserAgent(testCase.UserAgent, classifyReferenceTime); category != testCase.Category {
 				t.Errorf("got %q, want %q", category, testCase.Category)
 			}
 		})

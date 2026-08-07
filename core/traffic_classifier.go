@@ -6,6 +6,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/boreq/plum/logging"
 	"github.com/boreq/plum/parser"
 )
 
@@ -195,16 +196,24 @@ type requestCounters struct {
 
 type TrafficClassifier struct {
 	ips map[string]map[string]*requestCounters
+	log logging.Logger
 }
 
 func NewTrafficClassifier() *TrafficClassifier {
+	log := logging.New("core/traffic_classifier")
+
+	if newest, outOfDate := BrowserReleaseDataIsOutOfDate(time.Now()); outOfDate {
+		log.Warn("browser release data has to be updated, outdated browsers are not detected reliably", "newestKnownRelease", newest.Format(bucketKeyFormat))
+	}
+
 	return &TrafficClassifier{
 		ips: make(map[string]map[string]*requestCounters),
+		log: log,
 	}
 }
 
 func (c *TrafficClassifier) Classify(entry *parser.Entry) Category {
-	category := classifyUserAgent(entry.UserAgent)
+	category := classifyUserAgent(entry.UserAgent, entry.Time)
 
 	if isScanRequest(entry.HttpRequestURI) {
 		category = CategoryMalicious
@@ -270,7 +279,7 @@ func (c *TrafficClassifier) maliciousRequests(remoteAddress string, t time.Time)
 	return malicious
 }
 
-func classifyUserAgent(rawUserAgent string) Category {
+func classifyUserAgent(rawUserAgent string, t time.Time) Category {
 	raw := strings.ToLower(rawUserAgent)
 
 	if isMissingUserAgent(raw) {
@@ -298,6 +307,10 @@ func classifyUserAgent(rawUserAgent string) Category {
 	}
 
 	if pretendsToBeBrowser(raw) && !containsBrowserProduct(products) {
+		return CategoryPossiblyAutomated
+	}
+
+	if isOutdatedBrowser(raw, t) {
 		return CategoryPossiblyAutomated
 	}
 
