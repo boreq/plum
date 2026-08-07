@@ -539,6 +539,21 @@ func TestClassifyUserAgentName(t *testing.T) {
 			UserAgent: "Newsboat/2.40.0",
 			Category:  CategoryAutomated,
 		},
+		{
+			UserAgent: "mozilla/5.0 (windows nt 10.0; win64; x64) applewebkit/537.36 (khtml, like gecko) chrome/128.0.6613.138 safari/537.36",
+			Category:  CategoryPossiblyAutomated,
+		},
+
+		// Trap: an all-lowercase UA from a legitimate custom client is
+		// incorrectly flagged. The mixed-case version is unclassified.
+		{
+			UserAgent: "someuseragent/1.0.0",
+			Category:  CategoryPossiblyAutomated,
+		},
+		{
+			UserAgent: "SomeUserAgent/1.0.0",
+			Category:  CategoryUnclassified,
+		},
 	}
 
 	for _, testCase := range testCases {

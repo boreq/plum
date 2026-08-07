@@ -316,12 +316,20 @@ func classifyUserAgent(rawUserAgent string, t time.Time) Category {
 		return CategoryPossiblyAutomated
 	}
 
+	if isAllLowercaseUserAgent(rawUserAgent) {
+		return CategoryPossiblyAutomated
+	}
+
 	return CategoryUnclassified
 }
 
 func isMissingUserAgent(raw string) bool {
 	raw = strings.TrimSpace(raw)
 	return raw == "" || raw == "-"
+}
+
+func isAllLowercaseUserAgent(rawUserAgent string) bool {
+	return rawUserAgent == strings.ToLower(rawUserAgent)
 }
 
 func userAgentProducts(raw string) []string {
