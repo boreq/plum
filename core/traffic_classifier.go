@@ -126,9 +126,11 @@ var scanUris = map[string]struct{}{
 	"/server-status":              {},
 	"/telescope/requests":         {},
 
+	"/wp-admin/admin-ajax.php":                          {},
 	"/wp-admin/install.php":                             {},
 	"/wp-admin/install.php?step=1":                      {},
 	"/wp-content/plugins/hellopress/wp_filemanager.php": {},
+	"/wp-content/plugins/index.php":                     {},
 	"/wp-json/batch/v1":                                 {},
 	"/?rest_route=/batch/v1":                            {},
 }
