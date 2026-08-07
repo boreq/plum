@@ -554,6 +554,57 @@ func TestClassifyUserAgentName(t *testing.T) {
 			UserAgent: "SomeUserAgent/1.0.0",
 			Category:  CategoryUnclassified,
 		},
+
+		// Quoted user agents are sent by misconfigured/automated tools.
+		// A quote at either end is enough to trigger detection.
+		{
+			UserAgent: "\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36\"",
+			Category:  CategoryPossiblyAutomated,
+		},
+		{
+			UserAgent: "\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
+			Category:  CategoryPossiblyAutomated,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36\"",
+			Category:  CategoryPossiblyAutomated,
+		},
+		{
+			UserAgent: "'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'",
+			Category:  CategoryPossiblyAutomated,
+		},
+		{
+			UserAgent: "'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
+			Category:  CategoryPossiblyAutomated,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'",
+			Category:  CategoryPossiblyAutomated,
+		},
+		{
+			UserAgent: `\x22Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36\x22`,
+			Category:  CategoryPossiblyAutomated,
+		},
+		{
+			UserAgent: `\x22Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36`,
+			Category:  CategoryPossiblyAutomated,
+		},
+		{
+			UserAgent: `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36\x22`,
+			Category:  CategoryPossiblyAutomated,
+		},
+		{
+			UserAgent: `\x27Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36\x27`,
+			Category:  CategoryPossiblyAutomated,
+		},
+		{
+			UserAgent: `\x27Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36`,
+			Category:  CategoryPossiblyAutomated,
+		},
+		{
+			UserAgent: `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36\x27`,
+			Category:  CategoryPossiblyAutomated,
+		},
 	}
 
 	for _, testCase := range testCases {

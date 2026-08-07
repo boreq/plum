@@ -320,6 +320,10 @@ func classifyUserAgent(rawUserAgent string, t time.Time) Category {
 		return CategoryPossiblyAutomated
 	}
 
+	if isQuotedUserAgent(rawUserAgent) {
+		return CategoryPossiblyAutomated
+	}
+
 	return CategoryUnclassified
 }
 
@@ -330,6 +334,15 @@ func isMissingUserAgent(raw string) bool {
 
 func isAllLowercaseUserAgent(rawUserAgent string) bool {
 	return rawUserAgent == strings.ToLower(rawUserAgent)
+}
+
+func isQuotedUserAgent(rawUserAgent string) bool {
+	for _, q := range []string{`"`, `'`, `\x22`, `\x27`} {
+		if strings.HasPrefix(rawUserAgent, q) || strings.HasSuffix(rawUserAgent, q) {
+			return true
+		}
+	}
+	return false
 }
 
 func userAgentProducts(raw string) []string {
