@@ -1,4 +1,4 @@
-package core
+package domain
 
 func NewSet() Set {
 	return make(Set)

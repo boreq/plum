@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/boreq/errors"
-	"github.com/boreq/plum/core"
+	"github.com/boreq/plum/domain"
 )
 
 var (
@@ -23,7 +23,7 @@ type Application struct {
 	RemoveOldData   *RemoveOldDataHandler
 }
 
-func New(repositories *core.Repositories) *Application {
+func New(repositories *domain.Repositories) *Application {
 	return &Application{
 		GetWebsites:     NewGetWebsitesHandler(repositories),
 		GetHour:         NewGetHourHandler(repositories),
@@ -37,7 +37,7 @@ func New(repositories *core.Repositories) *Application {
 }
 
 type RangeResult struct {
-	Summary *core.Summary
+	Summary *domain.Summary
 	Series  []SeriesPoint
 }
 
@@ -49,7 +49,7 @@ type SeriesPoint struct {
 	Statuses map[string]int
 }
 
-func NewSeriesPoint(t time.Time, summary *core.Summary) SeriesPoint {
+func NewSeriesPoint(t time.Time, summary *domain.Summary) SeriesPoint {
 	statuses := make(map[string]int, len(summary.Statuses))
 	for status, metrics := range summary.Statuses {
 		statuses[status] = metrics.Hits

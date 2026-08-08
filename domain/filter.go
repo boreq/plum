@@ -1,4 +1,4 @@
-package core
+package domain
 
 type Filter struct {
 	Category  Category

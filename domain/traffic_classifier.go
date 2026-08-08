@@ -1,4 +1,4 @@
-package core
+package domain
 
 import (
 	"net/url"
@@ -7,8 +7,8 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/boreq/plum/domain/parser"
 	"github.com/boreq/plum/logging"
-	"github.com/boreq/plum/parser"
 )
 
 const (

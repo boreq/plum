@@ -1,9 +1,9 @@
-package core
+package domain
 
 import (
 	"testing"
 
-	"github.com/boreq/plum/parser"
+	"github.com/boreq/plum/domain/parser"
 )
 
 func testEntryWithUserAgent(userAgent, remoteAddress, uri, status, referer string, bytes int) *parser.Entry {

@@ -2,21 +2,21 @@ package app
 
 import (
 	"github.com/boreq/errors"
-	"github.com/boreq/plum/core"
+	"github.com/boreq/plum/domain"
 )
 
 type GetRangeDaily struct {
 	Website string
-	From    core.Day
-	To      core.Day
-	Filter  core.Filter
+	From    domain.Day
+	To      domain.Day
+	Filter  domain.Filter
 }
 
 type GetRangeDailyHandler struct {
-	repositories *core.Repositories
+	repositories *domain.Repositories
 }
 
-func NewGetRangeDailyHandler(repositories *core.Repositories) *GetRangeDailyHandler {
+func NewGetRangeDailyHandler(repositories *domain.Repositories) *GetRangeDailyHandler {
 	return &GetRangeDailyHandler{
 		repositories: repositories,
 	}
@@ -28,7 +28,7 @@ func (h *GetRangeDailyHandler) Execute(query GetRangeDaily) (RangeResult, error)
 		return RangeResult{}, ErrWebsiteNotFound
 	}
 
-	summary := core.NewSummary()
+	summary := domain.NewSummary()
 
 	var series []SeriesPoint
 	for day := query.From; !day.After(query.To); day = day.Next() {

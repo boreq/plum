@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/boreq/plum/app"
-	"github.com/boreq/plum/core"
+	"github.com/boreq/plum/domain"
 )
 
 type RangeResult struct {
@@ -70,7 +70,7 @@ func newSeriesPoint(seriesPoint app.SeriesPoint) SeriesPoint {
 	}
 }
 
-func newData(summary *core.Summary) Data {
+func newData(summary *domain.Summary) Data {
 	return Data{
 		Metrics:    newMetrics(&summary.Metrics),
 		Categories: newCategoryMetricsMap(summary.Categories),
@@ -81,7 +81,7 @@ func newData(summary *core.Summary) Data {
 	}
 }
 
-func newCategoryMetricsMap(source map[core.Category]*core.Metrics) map[string]Metrics {
+func newCategoryMetricsMap(source map[domain.Category]*domain.Metrics) map[string]Metrics {
 	rv := make(map[string]Metrics, len(source))
 	for category, metrics := range source {
 		rv[category.String()] = newMetrics(metrics)
@@ -89,7 +89,7 @@ func newCategoryMetricsMap(source map[core.Category]*core.Metrics) map[string]Me
 	return rv
 }
 
-func newUserAgentMetricsMap(source map[string]*core.UserAgentMetrics) map[string]UserAgentMetrics {
+func newUserAgentMetricsMap(source map[string]*domain.UserAgentMetrics) map[string]UserAgentMetrics {
 	rv := make(map[string]UserAgentMetrics, len(source))
 	for userAgent, userAgentMetrics := range source {
 		browser := ""
@@ -105,7 +105,7 @@ func newUserAgentMetricsMap(source map[string]*core.UserAgentMetrics) map[string
 	return rv
 }
 
-func newMetricsMap(source map[string]*core.Metrics) map[string]Metrics {
+func newMetricsMap(source map[string]*domain.Metrics) map[string]Metrics {
 	rv := make(map[string]Metrics, len(source))
 	for key, metrics := range source {
 		rv[key] = newMetrics(metrics)
@@ -113,7 +113,7 @@ func newMetricsMap(source map[string]*core.Metrics) map[string]Metrics {
 	return rv
 }
 
-func newMetrics(metrics *core.Metrics) Metrics {
+func newMetrics(metrics *domain.Metrics) Metrics {
 	return Metrics{
 		Visits:        metrics.Visits.Size(),
 		Hits:          metrics.Hits,

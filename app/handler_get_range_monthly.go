@@ -2,21 +2,21 @@ package app
 
 import (
 	"github.com/boreq/errors"
-	"github.com/boreq/plum/core"
+	"github.com/boreq/plum/domain"
 )
 
 type GetRangeMonthly struct {
 	Website string
-	From    core.Month
-	To      core.Month
-	Filter  core.Filter
+	From    domain.Month
+	To      domain.Month
+	Filter  domain.Filter
 }
 
 type GetRangeMonthlyHandler struct {
-	repositories *core.Repositories
+	repositories *domain.Repositories
 }
 
-func NewGetRangeMonthlyHandler(repositories *core.Repositories) *GetRangeMonthlyHandler {
+func NewGetRangeMonthlyHandler(repositories *domain.Repositories) *GetRangeMonthlyHandler {
 	return &GetRangeMonthlyHandler{
 		repositories: repositories,
 	}
@@ -28,7 +28,7 @@ func (h *GetRangeMonthlyHandler) Execute(query GetRangeMonthly) (RangeResult, er
 		return RangeResult{}, ErrWebsiteNotFound
 	}
 
-	summary := core.NewSummary()
+	summary := domain.NewSummary()
 
 	var series []SeriesPoint
 	for month := query.From; !month.After(query.To); month = month.Next() {

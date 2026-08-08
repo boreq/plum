@@ -1,17 +1,15 @@
 package app
 
-import (
-	"github.com/boreq/plum/core"
-)
+import "github.com/boreq/plum/domain"
 
 type GetWebsites struct {
 }
 
 type GetWebsitesHandler struct {
-	repositories *core.Repositories
+	repositories *domain.Repositories
 }
 
-func NewGetWebsitesHandler(repositories *core.Repositories) *GetWebsitesHandler {
+func NewGetWebsitesHandler(repositories *domain.Repositories) *GetWebsitesHandler {
 	return &GetWebsitesHandler{
 		repositories: repositories,
 	}

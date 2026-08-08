@@ -2,26 +2,26 @@ package app
 
 import (
 	"github.com/boreq/errors"
-	"github.com/boreq/plum/core"
+	"github.com/boreq/plum/domain"
 )
 
 type GetMonth struct {
 	Website string
-	Month   core.Month
-	Filter  core.Filter
+	Month   domain.Month
+	Filter  domain.Filter
 }
 
 type GetMonthHandler struct {
-	repositories *core.Repositories
+	repositories *domain.Repositories
 }
 
-func NewGetMonthHandler(repositories *core.Repositories) *GetMonthHandler {
+func NewGetMonthHandler(repositories *domain.Repositories) *GetMonthHandler {
 	return &GetMonthHandler{
 		repositories: repositories,
 	}
 }
 
-func (h *GetMonthHandler) Execute(query GetMonth) (*core.Summary, error) {
+func (h *GetMonthHandler) Execute(query GetMonth) (*domain.Summary, error) {
 	repository, ok := h.repositories.Get(query.Website)
 	if !ok {
 		return nil, ErrWebsiteNotFound

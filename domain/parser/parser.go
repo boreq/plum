@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/boreq/errors"
-	"github.com/boreq/plum/parser/format"
+	"github.com/boreq/plum/domain/parser/format"
 )
 
 type Entry struct {

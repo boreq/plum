@@ -1,11 +1,11 @@
-package core
+package domain
 
 import (
 	"testing"
 	"time"
 
 	"github.com/boreq/plum/config"
-	"github.com/boreq/plum/parser"
+	"github.com/boreq/plum/domain/parser"
 )
 
 func TestInsertIgnoresOldEntries(t *testing.T) {
@@ -81,7 +81,7 @@ func TestRetrieveMarksEarlierTrafficOfMaliciousAddresses(t *testing.T) {
 	}
 
 	summary, _ = r.RetrieveDay(day.Year(), day.Month(), day.Day(), Filter{Category: CategoryMalicious})
-	if hits := summary.Metrics.Hits; hits != 1 {
+	if hits := summary.Hits; hits != 1 {
 		t.Fatalf("got %d hits for the malicious filter", hits)
 	}
 }

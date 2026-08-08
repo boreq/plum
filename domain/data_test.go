@@ -1,9 +1,9 @@
-package core
+package domain
 
 import (
 	"testing"
 
-	"github.com/boreq/plum/parser"
+	"github.com/boreq/plum/domain/parser"
 )
 
 func TestCreateVisitHash(t *testing.T) {

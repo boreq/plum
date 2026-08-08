@@ -1,11 +1,11 @@
-package core
+package domain
 
 import (
 	"testing"
 	"time"
 
 	"github.com/boreq/plum/config"
-	"github.com/boreq/plum/parser"
+	"github.com/boreq/plum/domain/parser"
 )
 
 // Entries which are older than the retention period are not inserted at all so

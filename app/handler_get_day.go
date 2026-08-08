@@ -2,26 +2,26 @@ package app
 
 import (
 	"github.com/boreq/errors"
-	"github.com/boreq/plum/core"
+	"github.com/boreq/plum/domain"
 )
 
 type GetDay struct {
 	Website string
-	Day     core.Day
-	Filter  core.Filter
+	Day     domain.Day
+	Filter  domain.Filter
 }
 
 type GetDayHandler struct {
-	repositories *core.Repositories
+	repositories *domain.Repositories
 }
 
-func NewGetDayHandler(repositories *core.Repositories) *GetDayHandler {
+func NewGetDayHandler(repositories *domain.Repositories) *GetDayHandler {
 	return &GetDayHandler{
 		repositories: repositories,
 	}
 }
 
-func (h *GetDayHandler) Execute(query GetDay) (*core.Summary, error) {
+func (h *GetDayHandler) Execute(query GetDay) (*domain.Summary, error) {
 	repository, ok := h.repositories.Get(query.Website)
 	if !ok {
 		return nil, ErrWebsiteNotFound

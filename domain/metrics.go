@@ -1,4 +1,4 @@
-package core
+package domain
 
 func NewMetrics() Metrics {
 	return Metrics{

@@ -8,12 +8,11 @@ import (
 	"time"
 
 	"github.com/boreq/errors"
-	"github.com/boreq/plum/parser"
-
 	"github.com/boreq/guinea"
 	"github.com/boreq/plum/app"
 	"github.com/boreq/plum/config"
-	"github.com/boreq/plum/core"
+	"github.com/boreq/plum/domain"
+	"github.com/boreq/plum/domain/parser"
 	"github.com/boreq/plum/entrypoints/http"
 	"github.com/boreq/plum/entrypoints/timers"
 	"github.com/dustin/go-humanize"
@@ -42,7 +41,7 @@ func runRun(c guinea.Context) error {
 
 	errC := make(chan error)
 
-	repositories := core.NewRepositories()
+	repositories := domain.NewRepositories()
 
 	go logMemoryStats()
 
@@ -54,9 +53,9 @@ func runRun(c guinea.Context) error {
 			return err
 		}
 
-		r := core.NewRepository(website)
+		r := domain.NewRepository(website)
 
-		tracker := core.NewTracker(p, r)
+		tracker := domain.NewTracker(p, r)
 
 		go printStats(website.Name, tracker)
 
@@ -117,7 +116,7 @@ func getLogFormat(format string) string {
 	return format
 }
 
-func printStats(websiteName string, tracker *core.Tracker) {
+func printStats(websiteName string, tracker *domain.Tracker) {
 	lastLines, _ := tracker.GetStats()
 	duration := 5 * time.Second
 	for range time.Tick(duration) {

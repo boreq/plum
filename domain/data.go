@@ -1,10 +1,10 @@
-package core
+package domain
 
 import (
 	"crypto"
 	_ "crypto/sha512"
 
-	"github.com/boreq/plum/parser"
+	"github.com/boreq/plum/domain/parser"
 )
 
 func NewData() *Data {

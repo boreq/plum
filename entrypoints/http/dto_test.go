@@ -8,14 +8,14 @@ import (
 
 	"github.com/boreq/plum/app"
 	"github.com/boreq/plum/config"
-	"github.com/boreq/plum/core"
-	"github.com/boreq/plum/parser"
+	"github.com/boreq/plum/domain"
+	"github.com/boreq/plum/domain/parser"
 )
 
 var rangeEntryTime = time.Now().UTC().Truncate(24 * time.Hour).Add(-12 * time.Hour)
 
 func TestNewRangeResultJSON(t *testing.T) {
-	repository := core.NewRepository(config.Website{})
+	repository := domain.NewRepository(config.Website{})
 
 	entries := []*parser.Entry{
 		{
@@ -45,10 +45,10 @@ func TestNewRangeResultJSON(t *testing.T) {
 	}
 
 	var series []app.SeriesPoint
-	summary := core.NewSummary()
+	summary := domain.NewSummary()
 
 	for _, t2 := range []time.Time{rangeEntryTime, rangeEntryTime.Add(time.Hour)} {
-		data, ok := repository.RetrieveHour(t2.Year(), t2.Month(), t2.Day(), t2.Hour(), core.Filter{})
+		data, ok := repository.RetrieveHour(t2.Year(), t2.Month(), t2.Day(), t2.Hour(), domain.Filter{})
 		if !ok {
 			t.Fatal("retrieve failed")
 		}

@@ -1,4 +1,4 @@
-package core
+package domain
 
 import (
 	"bufio"
@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/boreq/plum/domain/parser"
 	"github.com/boreq/plum/logging"
-	"github.com/boreq/plum/parser"
 	"github.com/hpcloud/tail"
 )
 

@@ -8,7 +8,7 @@ import (
 
 	"github.com/boreq/errors"
 	"github.com/boreq/plum/app"
-	"github.com/boreq/plum/core"
+	"github.com/boreq/plum/domain"
 	"github.com/boreq/plum/entrypoints/http/api"
 	_ "github.com/boreq/plum/statik"
 	"github.com/julienschmidt/httprouter"
@@ -229,15 +229,15 @@ func mapError(err error) api.Error {
 	}
 }
 
-func getFilter(r *http.Request) (core.Filter, error) {
+func getFilter(r *http.Request) (domain.Filter, error) {
 	q := r.URL.Query()
 
 	category, err := getCategory(q.Get("category"))
 	if err != nil {
-		return core.Filter{}, errors.Wrap(err, "could not get the category")
+		return domain.Filter{}, errors.Wrap(err, "could not get the category")
 	}
 
-	return core.Filter{
+	return domain.Filter{
 		Category:  category,
 		Uri:       q.Get("uri"),
 		Status:    q.Get("status"),
@@ -246,60 +246,60 @@ func getFilter(r *http.Request) (core.Filter, error) {
 	}, nil
 }
 
-func getCategory(s string) (core.Category, error) {
+func getCategory(s string) (domain.Category, error) {
 	if s == "" {
-		return core.Category{}, nil
+		return domain.Category{}, nil
 	}
 
-	for _, category := range core.Categories {
+	for _, category := range domain.Categories {
 		if category.String() == s {
 			return category, nil
 		}
 	}
 
-	return core.Category{}, errors.New("unknown category")
+	return domain.Category{}, errors.New("unknown category")
 }
 
-func getHour(ps httprouter.Params, yearName, monthName, dayName, hourName string) (core.Hour, error) {
+func getHour(ps httprouter.Params, yearName, monthName, dayName, hourName string) (domain.Hour, error) {
 	year, month, err := getYearAndMonth(ps, yearName, monthName)
 	if err != nil {
-		return core.Hour{}, errors.Wrap(err, "could not get the year and the month")
+		return domain.Hour{}, errors.Wrap(err, "could not get the year and the month")
 	}
 
 	day, err := getParamInt(ps, dayName)
 	if err != nil {
-		return core.Hour{}, errors.Wrap(err, "could not get the day")
+		return domain.Hour{}, errors.Wrap(err, "could not get the day")
 	}
 
 	hour, err := getParamInt(ps, hourName)
 	if err != nil {
-		return core.Hour{}, errors.Wrap(err, "could not get the hour")
+		return domain.Hour{}, errors.Wrap(err, "could not get the hour")
 	}
 
-	return core.NewHour(year, month, day, hour)
+	return domain.NewHour(year, month, day, hour)
 }
 
-func getDay(ps httprouter.Params, yearName, monthName, dayName string) (core.Day, error) {
+func getDay(ps httprouter.Params, yearName, monthName, dayName string) (domain.Day, error) {
 	year, month, err := getYearAndMonth(ps, yearName, monthName)
 	if err != nil {
-		return core.Day{}, errors.Wrap(err, "could not get the year and the month")
+		return domain.Day{}, errors.Wrap(err, "could not get the year and the month")
 	}
 
 	day, err := getParamInt(ps, dayName)
 	if err != nil {
-		return core.Day{}, errors.Wrap(err, "could not get the day")
+		return domain.Day{}, errors.Wrap(err, "could not get the day")
 	}
 
-	return core.NewDay(year, month, day)
+	return domain.NewDay(year, month, day)
 }
 
-func getMonth(ps httprouter.Params, yearName, monthName string) (core.Month, error) {
+func getMonth(ps httprouter.Params, yearName, monthName string) (domain.Month, error) {
 	year, month, err := getYearAndMonth(ps, yearName, monthName)
 	if err != nil {
-		return core.Month{}, errors.Wrap(err, "could not get the year and the month")
+		return domain.Month{}, errors.Wrap(err, "could not get the year and the month")
 	}
 
-	return core.NewMonth(year, month)
+	return domain.NewMonth(year, month)
 }
 
 func getYearAndMonth(ps httprouter.Params, yearName, monthName string) (int, time.Month, error) {

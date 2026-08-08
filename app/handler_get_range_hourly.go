@@ -2,21 +2,21 @@ package app
 
 import (
 	"github.com/boreq/errors"
-	"github.com/boreq/plum/core"
+	"github.com/boreq/plum/domain"
 )
 
 type GetRangeHourly struct {
 	Website string
-	From    core.Hour
-	To      core.Hour
-	Filter  core.Filter
+	From    domain.Hour
+	To      domain.Hour
+	Filter  domain.Filter
 }
 
 type GetRangeHourlyHandler struct {
-	repositories *core.Repositories
+	repositories *domain.Repositories
 }
 
-func NewGetRangeHourlyHandler(repositories *core.Repositories) *GetRangeHourlyHandler {
+func NewGetRangeHourlyHandler(repositories *domain.Repositories) *GetRangeHourlyHandler {
 	return &GetRangeHourlyHandler{
 		repositories: repositories,
 	}
@@ -28,7 +28,7 @@ func (h *GetRangeHourlyHandler) Execute(query GetRangeHourly) (RangeResult, erro
 		return RangeResult{}, ErrWebsiteNotFound
 	}
 
-	summary := core.NewSummary()
+	summary := domain.NewSummary()
 
 	var series []SeriesPoint
 	for hour := query.From; !hour.After(query.To); hour = hour.Next() {

@@ -1,10 +1,10 @@
-package core
+package domain
 
 import (
 	"testing"
 	"time"
 
-	"github.com/boreq/plum/parser"
+	"github.com/boreq/plum/domain/parser"
 )
 
 func classifierEntry(remoteAddress, userAgent, uri string, t time.Time) *parser.Entry {
@@ -286,15 +286,17 @@ func TestIsScanRequest(t *testing.T) {
 
 const classifierBrowserUserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36"
 
-func scannedData(remoteAddress string, requests int) *Data {
+func scannedData(t *testing.T, remoteAddress string, requests int) *Data {
 	data := NewData()
 	for i := 0; i < requests; i++ {
-		data.Insert(&parser.Entry{
+		if err := data.Insert(&parser.Entry{
 			RemoteAddress:  remoteAddress,
 			UserAgent:      classifierBrowserUserAgent,
 			HttpRequestURI: "/.env",
 			Status:         "404",
-		}, CategoryMalicious)
+		}, CategoryMalicious); err != nil {
+			t.Fatal(err)
+		}
 	}
 	return data
 }
@@ -316,7 +318,7 @@ func TestIsMaliciousMarksAddresses(t *testing.T) {
 	now := time.Now().UTC()
 
 	m := NewMaliciousAddresses()
-	m.Insert(scannedData("1.1.1.1", MaliciousRequestThreshold+1), now)
+	m.Insert(scannedData(t, "1.1.1.1", MaliciousRequestThreshold+1), now)
 
 	if !m.IsMalicious("1.1.1.1", now) {
 		t.Error("the address should be malicious")
@@ -332,12 +334,14 @@ func TestIsMaliciousIgnoresOtherCategories(t *testing.T) {
 
 	data := NewData()
 	for i := 0; i <= MaliciousRequestThreshold; i++ {
-		data.Insert(&parser.Entry{
+		if err := data.Insert(&parser.Entry{
 			RemoteAddress:  "1.1.1.1",
 			UserAgent:      classifierBrowserUserAgent,
 			HttpRequestURI: "/",
 			Status:         "200",
-		}, CategoryUnclassified)
+		}, CategoryUnclassified); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	m := NewMaliciousAddresses()
@@ -352,7 +356,7 @@ func TestIsMaliciousLooksBothWays(t *testing.T) {
 	now := time.Now().UTC()
 
 	m := NewMaliciousAddresses()
-	m.Insert(scannedData("1.1.1.1", MaliciousRequestThreshold+1), now)
+	m.Insert(scannedData(t, "1.1.1.1", MaliciousRequestThreshold+1), now)
 
 	before := now.Add(-trafficWindow).Add(24 * time.Hour)
 	if !m.IsMalicious("1.1.1.1", before) {
@@ -369,7 +373,7 @@ func TestIsMaliciousIgnoresRequestsOutsideOfTheWindow(t *testing.T) {
 	now := time.Now().UTC()
 
 	m := NewMaliciousAddresses()
-	m.Insert(scannedData("1.1.1.1", MaliciousRequestThreshold+1), now)
+	m.Insert(scannedData(t, "1.1.1.1", MaliciousRequestThreshold+1), now)
 
 	if m.IsMalicious("1.1.1.1", now.Add(-trafficWindow).Add(-24*time.Hour)) {
 		t.Error("the address should not be malicious before the window")
@@ -384,7 +388,7 @@ func TestIsMaliciousRequiresTheThreshold(t *testing.T) {
 	now := time.Now().UTC()
 
 	m := NewMaliciousAddresses()
-	m.Insert(scannedData("1.1.1.1", MaliciousRequestThreshold), now)
+	m.Insert(scannedData(t, "1.1.1.1", MaliciousRequestThreshold), now)
 
 	if m.IsMalicious("1.1.1.1", now) {
 		t.Error("the address should not be malicious")
@@ -396,7 +400,7 @@ func TestIsMaliciousSumsBuckets(t *testing.T) {
 
 	m := NewMaliciousAddresses()
 	for i := 0; i <= MaliciousRequestThreshold; i++ {
-		m.Insert(scannedData("1.1.1.1", 1), now.Add(-time.Duration(i)*24*time.Hour))
+		m.Insert(scannedData(t, "1.1.1.1", 1), now.Add(-time.Duration(i)*24*time.Hour))
 	}
 
 	if !m.IsMalicious("1.1.1.1", now) {

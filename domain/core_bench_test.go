@@ -1,4 +1,4 @@
-package core
+package domain
 
 import (
 	"bufio"
@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/boreq/plum/config"
-	"github.com/boreq/plum/parser"
+	"github.com/boreq/plum/domain/parser"
 )
 
 var benchmarkLogPath = flag.String("benchmark-log", "", "path to an access log in the combined format which the benchmarks are run against")

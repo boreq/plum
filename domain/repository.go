@@ -1,4 +1,4 @@
-package core
+package domain
 
 import (
 	"net/url"
@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/boreq/plum/config"
+	"github.com/boreq/plum/domain/parser"
 	"github.com/boreq/plum/logging"
-	"github.com/boreq/plum/parser"
 )
 
 const entryKeyFormat = "2006-01-02 15"
