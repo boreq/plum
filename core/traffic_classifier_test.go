@@ -376,6 +376,10 @@ func TestClassifyUserAgentName(t *testing.T) {
 			Category:  CategoryAutomated,
 		},
 		{
+			UserAgent: "Dart/3.9",
+			Category:  CategoryAutomated,
+		},
+		{
 			UserAgent: "GDELT-media-org-research/1.0 (academic)",
 			Category:  CategoryAutomated,
 		},

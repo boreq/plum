@@ -41,6 +41,7 @@ var automatedUserAgentNames = map[string]struct{}{
 	"bun":               {},
 	"domaindrift":       {},
 	"axios":             {},
+	"dart":              {},
 	"node":              {},
 	"http.rb":           {},
 
