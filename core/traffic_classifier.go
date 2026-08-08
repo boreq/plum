@@ -79,17 +79,6 @@ var automatedUserAgentNames = map[string]struct{}{
 	"cms-checker": {},
 }
 
-var maliciousUserAgentNames = map[string]struct{}{
-	"vuln_scanner":      {},
-	"zgrab":             {},
-	"masscan":           {},
-	"nuclei":            {},
-	"sqlmap":            {},
-	"nikto":             {},
-	"wpscan":            {},
-	"tlm-audit-scanner": {},
-}
-
 var automatedUserAgentMarkers = []string{
 	"feed",
 	"rss",
@@ -116,7 +105,19 @@ var browserProducts = map[string]struct{}{
 	"chrome":  {},
 }
 
-var scanUris = map[string]struct{}{
+var maliciousUserAgentNames = map[string]struct{}{
+	"bytespider":        {},
+	"vuln_scanner":      {},
+	"zgrab":             {},
+	"masscan":           {},
+	"nuclei":            {},
+	"sqlmap":            {},
+	"nikto":             {},
+	"wpscan":            {},
+	"tlm-audit-scanner": {},
+}
+
+var maliciousUris = map[string]struct{}{
 	"/_ignition/execute-solution": {},
 	"/actuator/env":               {},
 	"/api/v1/login":               {},
@@ -135,17 +136,7 @@ var scanUris = map[string]struct{}{
 	"/?rest_route=/batch/v1":                            {},
 }
 
-var scanRules = []func(r scanRequest) bool{
-	matchesKnownScanUri,
-	attemptsPathTraversal,
-	requestsHiddenFile,
-	requestsWordPressProbe,
-	requestsNumberedScript,
-	requestsSensitiveFile,
-	containsInjection,
-}
-
-var sensitiveFileExtensions = []string{
+var maliciousFileExtensions = []string{
 	".env",
 	".conf",
 	".ini",
@@ -160,7 +151,7 @@ var sensitiveFileExtensions = []string{
 	".log",
 }
 
-var sensitiveFileNames = map[string]struct{}{
+var maliciousFileNames = map[string]struct{}{
 	"appsettings.json":     {},
 	"aws-credentials.txt":  {},
 	"aws-ses.json":         {},
@@ -188,7 +179,7 @@ var sensitiveFileNames = map[string]struct{}{
 	"this_is_a_new_hello_world.php": {},
 }
 
-var wordPressIncludeDirectories = []string{
+var maliciousDirectories = []string{
 	"wp-includes",
 }
 
@@ -199,6 +190,16 @@ var injectionMarkers = []string{
 	"cmd=",
 	"<",
 	">",
+}
+
+var maliciousRules = []func(r request) bool{
+	requestsMaliciousUri,
+	requestsMaliciousDirectory,
+	requestsMaliciousFile,
+	requestsHiddenFile,
+	attemptsPathTraversal,
+	requestsNumberedPhpScript,
+	attemptsInjection,
 }
 
 type requestCounters struct {
@@ -408,7 +409,7 @@ func containsBrowserProduct(products []string) bool {
 	return false
 }
 
-type scanRequest struct {
+type request struct {
 	Uri      string
 	Path     string
 	Query    string
@@ -416,7 +417,7 @@ type scanRequest struct {
 	FileName string
 }
 
-func newScanRequest(uri string) scanRequest {
+func newRequest(uri string) request {
 	uri = strings.ToLower(uri)
 	if unescaped, err := url.PathUnescape(uri); err == nil {
 		uri = unescaped
@@ -435,7 +436,7 @@ func newScanRequest(uri string) scanRequest {
 		fileName = segments[len(segments)-1]
 	}
 
-	return scanRequest{
+	return request{
 		Uri:      uri,
 		Path:     path,
 		Query:    query,
@@ -445,9 +446,9 @@ func newScanRequest(uri string) scanRequest {
 }
 
 func isScanRequest(uri string) bool {
-	r := newScanRequest(uri)
+	r := newRequest(uri)
 
-	for _, rule := range scanRules {
+	for _, rule := range maliciousRules {
 		if rule(r) {
 			return true
 		}
@@ -456,12 +457,12 @@ func isScanRequest(uri string) bool {
 	return false
 }
 
-func matchesKnownScanUri(r scanRequest) bool {
-	_, ok := scanUris[r.Uri]
+func requestsMaliciousUri(r request) bool {
+	_, ok := maliciousUris[r.Uri]
 	return ok
 }
 
-func attemptsPathTraversal(r scanRequest) bool {
+func attemptsPathTraversal(r request) bool {
 	if strings.HasPrefix(r.Uri, "//") {
 		return true
 	}
@@ -475,7 +476,7 @@ func attemptsPathTraversal(r scanRequest) bool {
 	return false
 }
 
-func requestsHiddenFile(r scanRequest) bool {
+func requestsHiddenFile(r request) bool {
 	for _, segment := range r.Segments {
 		if !strings.HasPrefix(segment, ".") {
 			continue
@@ -491,13 +492,9 @@ func requestsHiddenFile(r scanRequest) bool {
 	return false
 }
 
-func requestsWordPressProbe(r scanRequest) bool {
-	if !strings.HasSuffix(r.FileName, ".php") {
-		return false
-	}
-
+func requestsMaliciousDirectory(r request) bool {
 	for _, segment := range r.Segments {
-		for _, directory := range wordPressIncludeDirectories {
+		for _, directory := range maliciousDirectories {
 			if segment == directory {
 				return true
 			}
@@ -507,7 +504,7 @@ func requestsWordPressProbe(r scanRequest) bool {
 	return false
 }
 
-func requestsNumberedScript(r scanRequest) bool {
+func requestsNumberedPhpScript(r request) bool {
 	name, extension, found := strings.Cut(r.FileName, ".")
 	if !found || extension != "php" || name == "" {
 		return false
@@ -522,12 +519,12 @@ func requestsNumberedScript(r scanRequest) bool {
 	return true
 }
 
-func requestsSensitiveFile(r scanRequest) bool {
-	if _, ok := sensitiveFileNames[r.FileName]; ok {
+func requestsMaliciousFile(r request) bool {
+	if _, ok := maliciousFileNames[r.FileName]; ok {
 		return true
 	}
 
-	for _, extension := range sensitiveFileExtensions {
+	for _, extension := range maliciousFileExtensions {
 		if strings.HasSuffix(r.FileName, extension) {
 			return true
 		}
@@ -536,7 +533,7 @@ func requestsSensitiveFile(r scanRequest) bool {
 	return false
 }
 
-func containsInjection(r scanRequest) bool {
+func attemptsInjection(r request) bool {
 	for _, marker := range injectionMarkers {
 		if strings.Contains(r.Uri, marker) {
 			return true

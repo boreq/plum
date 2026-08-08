@@ -123,6 +123,9 @@ func TestIsScanRequest(t *testing.T) {
 		{Uri: "/wp-includes/interactivity-api/index.php", Scan: true},
 		{Uri: "/wp-includes/wlwmanifest.xml", Scan: true},
 		{Uri: "/blog/wp-includes/registration.php", Scan: true},
+		{Uri: "/wp-includes/js/jquery/jquery.min.js", Scan: true},
+		{Uri: "/wp-includes/css/dist/block-library/style.min.css", Scan: true},
+		{Uri: "/wp-includes/js/wp-emoji-release.min.js", Scan: true},
 		{Uri: "/?rest_route=%2Fbatch%2Fv1", Scan: true},
 		{Uri: "/wp-content/plugins/hellopress/wp_filemanager.php", Scan: true},
 		{Uri: "/wp-content/plugins/index.php", Scan: true},
@@ -227,9 +230,6 @@ func TestIsScanRequest(t *testing.T) {
 		{Uri: "/shop/checkout.aspx", Scan: false},
 		{Uri: "/app/handler.jsp", Scan: false},
 		{Uri: "/wp-content/themes/theme/style.css", Scan: false},
-		{Uri: "/wp-includes/js/jquery/jquery.min.js", Scan: false},
-		{Uri: "/wp-includes/css/dist/block-library/style.min.css", Scan: false},
-		{Uri: "/wp-includes/js/wp-emoji-release.min.js", Scan: false},
 		{Uri: "/wp-json/wp/v2/posts", Scan: false},
 		{Uri: "/blog/password-managers", Scan: false},
 		{Uri: "/articles/my-secret-recipe", Scan: false},
@@ -410,6 +410,10 @@ func TestClassifyUserAgentName(t *testing.T) {
 		},
 		{
 			UserAgent: "sqlmap/1.9#stable (https://sqlmap.org)",
+			Category:  CategoryMalicious,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (compatible; Bytespider; spider-feedback@bytedance.com)",
 			Category:  CategoryMalicious,
 		},
 		{
