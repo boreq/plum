@@ -129,6 +129,14 @@ $spacing: 10px;
     border-radius: 5px;
 }
 
+.box.box-error {
+    padding: .8em;
+    margin-bottom: $spacing;
+    font-size: 10px;
+    background-color: $box-error-background-color;
+    color: $box-error-text-color;
+}
+
 .box.box-normal, .box.box-inversed {
     box-shadow: 0 0 5px rgba(34, 34, 34, .10);
 }

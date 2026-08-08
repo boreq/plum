@@ -80,6 +80,10 @@
           </div>
       </div>
 
+      <div class="box box-error" v-if="failed">
+          Lost connection to the server. You are seeing invalid data.
+      </div>
+
       <div class="grid" :class="{ updating: updating }">
           <div class="box box-inversed malicious-traffic">
               <CategoryTraffic :data="summary"

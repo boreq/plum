@@ -65,6 +65,7 @@ export default defineComponent({
 
             updating: false,
             refreshing: false,
+            failed: false,
 
             websites: [] as string[],
             selectedWebsite: '',
@@ -220,7 +221,7 @@ export default defineComponent({
             this.cancelReload();
 
             const parameters = this.currentParameters();
-            this.loadPoint(parameters).then(() => this.loadFinished(parameters));
+            this.loadPoint(parameters).then(loaded => this.loadFinished(parameters, loaded));
         },
 
         groupingTypeAvailable(groupingType: GroupingType): boolean {
@@ -258,6 +259,7 @@ export default defineComponent({
             this.updating = true;
             apiService.getWebsites()
                 .then(response => {
+                    this.failed = false;
                     this.websites = response.data;
                     if (this.websites && this.websites.length > 0) {
                         this.selectedWebsite = this.websites[0];
@@ -268,6 +270,7 @@ export default defineComponent({
                 })
                 .catch(() => {
                     this.updating = false;
+                    this.failed = true;
                 });
         },
 
@@ -286,10 +289,10 @@ export default defineComponent({
 
             const parameters = this.currentParameters();
             Promise.all([this.loadRange(parameters), this.loadPoint(parameters)])
-                .then(() => this.loadFinished(parameters));
+                .then(results => this.loadFinished(parameters, results.every(v => v)));
         },
 
-        loadRange(parameters: Parameters): Promise<void> {
+        loadRange(parameters: Parameters): Promise<boolean> {
             return apiService.getTimeRange(parameters.website, parameters.timePeriod, parameters.groupingType, parameters.filter)
                 .then(response => {
                     if (this.parametersUnchanged(parameters)) {
@@ -297,8 +300,9 @@ export default defineComponent({
                         this.series = response.data.series || [];
                         this.dropSelectionOutsideSeries();
                     }
+                    return true;
                 })
-                .catch(() => undefined);
+                .catch(() => false);
         },
 
         dropSelectionOutsideSeries(): void {
@@ -308,12 +312,12 @@ export default defineComponent({
             }
         },
 
-        loadPoint(parameters: Parameters): Promise<void> {
+        loadPoint(parameters: Parameters): Promise<boolean> {
             if (!parameters.selectedTime) {
                 if (this.parametersUnchanged(parameters)) {
                     this.pointSummary = null;
                 }
-                return Promise.resolve();
+                return Promise.resolve(true);
             }
 
             return apiService.getTimePoint(parameters.website, parameters.groupingType, parameters.selectedTime, parameters.filter)
@@ -321,16 +325,18 @@ export default defineComponent({
                     if (this.parametersUnchanged(parameters)) {
                         this.pointSummary = response.data;
                     }
+                    return true;
                 })
-                .catch(() => undefined);
+                .catch(() => false);
         },
 
-        loadFinished(parameters: Parameters): void {
+        loadFinished(parameters: Parameters, loaded: boolean): void {
             if (!this.parametersUnchanged(parameters)) {
                 return;
             }
             this.updating = false;
             this.refreshing = false;
+            this.failed = !loaded;
             this.scheduleReload(parameters);
         },
 
