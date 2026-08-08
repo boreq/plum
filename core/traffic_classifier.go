@@ -32,6 +32,7 @@ var automatedUserAgentNames = map[string]struct{}{
 	"sogou web spider":  {},
 	"moooodotfarm":      {},
 	"ccbot":             {},
+	"claude-user":       {},
 	"python":            {},
 	"python-requests":   {},
 	"python-urllib":     {},
@@ -159,6 +160,7 @@ var maliciousFileExtensions = []string{
 
 var maliciousFileNames = map[string]struct{}{
 	"appsettings.json":     {},
+	"asset-manifest.json":  {},
 	"aws-credentials.txt":  {},
 	"aws-ses.json":         {},
 	"backup.zip":           {},
@@ -173,7 +175,9 @@ var maliciousFileNames = map[string]struct{}{
 	"config.json":          {},
 	"config.php":           {},
 	"gcp-credentials.json": {},
+	"manifest.json":        {},
 	"secrets.json":         {},
+	"webpack-stats.json":   {},
 
 	"wlwmanifest.xml": {},
 	"wp-config.php":   {},

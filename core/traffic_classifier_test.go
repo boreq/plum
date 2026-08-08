@@ -120,6 +120,11 @@ func TestIsScanRequest(t *testing.T) {
 		{Uri: "/backup.zip", Scan: true},
 		{Uri: "/secrets.json", Scan: true},
 		{Uri: "/config/secrets.json", Scan: true},
+		{Uri: "/webpack-stats.json", Scan: true},
+		{Uri: "/asset-manifest.json", Scan: true},
+		{Uri: "/manifest.json", Scan: true},
+		{Uri: "/static/asset-manifest.json", Scan: true},
+		{Uri: "/static/webpack-stats.json", Scan: true},
 
 		{Uri: "/wp-config.php", Scan: true},
 		{Uri: "/blog/wp-config.php", Scan: true},
@@ -393,6 +398,10 @@ func TestClassifyUserAgentName(t *testing.T) {
 		},
 		{
 			UserAgent: "CCBot/2.0 (https://commoncrawl.org/faq/)",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "Claude-User (claude-code/2.1.219; +https://support.anthropic.com/)",
 			Category:  CategoryAutomated,
 		},
 		{
