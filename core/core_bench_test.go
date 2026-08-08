@@ -37,7 +37,11 @@ func benchmarkLog(b *testing.B, fromEnd bool) (string, int) {
 	defer target.Close()
 
 	writer := bufio.NewWriter(target)
-	defer writer.Flush()
+	defer func() {
+		if err := writer.Flush(); err != nil {
+			b.Error(err)
+		}
+	}()
 
 	scanner := bufio.NewScanner(source)
 	scanner.Buffer(make([]byte, 1024*1024), 1024*1024)

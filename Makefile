@@ -1,6 +1,40 @@
 .PHONY: all
 all: test build
 
+.PHONY: dev
+dev: test lint build
+
+.PHONY: ci
+ci: ci-backend ci-frontend
+
+.PHONY: ci-backend
+ci-backend: tools dependencies tidy fmt check-repository-unchanged test lint build
+
+.PHONY: ci-frontend
+ci-frontend:
+	$(MAKE) -C plum-frontend ci
+
+.PHONY: tools
+tools:
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
+	go install golang.org/x/tools/cmd/goimports@v0.45.0
+
+.PHONY: dependencies
+dependencies:
+	go get ./...
+
+.PHONY: tidy
+tidy:
+	go mod tidy
+
+.PHONY: lint
+lint:
+	golangci-lint run ./...
+
+.PHONY: check-repository-unchanged
+check-repository-unchanged:
+	./tools/check_repository_unchanged.sh
+
 .PHONY: build
 build:
 	mkdir -p build

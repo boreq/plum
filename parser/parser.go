@@ -8,11 +8,8 @@ import (
 	"time"
 
 	"github.com/boreq/errors"
-	"github.com/boreq/plum/logging"
 	"github.com/boreq/plum/parser/format"
 )
-
-var log = logging.New("parser")
 
 type Entry struct {
 	// Client address.
@@ -161,7 +158,7 @@ func validate(items []format.Item) error {
 	// between two subsequent format items
 	for i := 0; i < len(items)-1; i++ {
 		if items[i].Type == items[i+1].Type {
-			errors.New("format elements must be delimited with a static string")
+			return errors.New("format elements must be delimited with a static string")
 		}
 	}
 

@@ -30,7 +30,7 @@ type UserAgentMetrics struct {
 }
 
 func (s *Summary) InsertLeaf(uri, status, referer, userAgent string, browser *Browser, metrics Metrics, visitPrefix string) {
-	s.Metrics.Add(metrics, visitPrefix)
+	s.Add(metrics, visitPrefix)
 	getOrCreateMetrics(s.Uris, uri).Add(metrics, visitPrefix)
 	getOrCreateMetrics(s.Statuses, status).Add(metrics, visitPrefix)
 	getOrCreateMetrics(s.Referers, referer).Add(metrics, visitPrefix)
@@ -52,7 +52,7 @@ func getOrCreateUserAgentMetrics(target map[string]*UserAgentMetrics, userAgent 
 }
 
 func (s *Summary) Merge(other *Summary) {
-	s.Metrics.Add(other.Metrics, "")
+	s.Add(other.Metrics, "")
 
 	for category, metrics := range other.Categories {
 		getOrCreateMetrics(s.Categories, category).Add(*metrics, "")

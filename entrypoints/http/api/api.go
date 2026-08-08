@@ -61,6 +61,8 @@ func Call(w http.ResponseWriter, r *http.Request, p httprouter.Params, handle Ha
 
 func Wrap(handle Handle) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		Call(w, r, p, handle)
+		if err := Call(w, r, p, handle); err != nil {
+			log.Error("call error", "err", err)
+		}
 	}
 }
