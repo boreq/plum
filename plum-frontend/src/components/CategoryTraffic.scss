@@ -24,9 +24,12 @@
     .metrics {
         display: flex;
         flex-flow: row;
-        justify-content: space-between;
+        gap: .5em;
 
         .metric {
+            flex: 1 1 0;
+            min-width: 0;
+
             .label {
                 color: $box-inversed-text-dimmed-color;
                 font-size: 12px;
