@@ -93,6 +93,10 @@ export default defineComponent({
                 });
         },
 
+        filtersApplied(): boolean {
+            return this.activeFilters.length > 0 || !!this.selectedTime;
+        },
+
         selectedCategory(): Category {
             return this.filter[FilterDimension.Category] as Category;
         },
@@ -166,6 +170,14 @@ export default defineComponent({
             const filter = {...this.filter};
             delete filter[dimension];
             this.filter = filter;
+            this.filterChanged();
+        },
+
+        clearFilters(): void {
+            if (!this.filtersApplied) {
+                return;
+            }
+            this.filter = {};
             this.filterChanged();
         },
 

@@ -46,6 +46,23 @@
               </ul>
           </div>
 
+          <div class="box box-dimmed" v-if="updating || refreshing">
+              <i class="fas fa-spinner fa-spin"></i>
+          </div>
+      </div>
+
+      <div class="parameters">
+          <div class="box box-dimmed" v-if="filtersApplied">
+              <a title="Click to remove all filters."
+                 v-on:click="clearFilters()">
+                  See all data
+              </a>
+          </div>
+
+          <div class="box box-dimmed" v-else>
+              <span>You are looking at all data</span>
+          </div>
+
           <div class="box box-dimmed" v-for="activeFilter of activeFilters" :key="activeFilter.dimension">
               <a class="active"
                  title="Click to remove this filter."
@@ -60,10 +77,6 @@
                  v-on:click="selectData(null)">
                   Data point: {{ selectedTimeLabel }}
               </a>
-          </div>
-
-          <div class="box box-dimmed" v-if="updating || refreshing">
-              <i class="fas fa-spinner fa-spin"></i>
           </div>
       </div>
 
