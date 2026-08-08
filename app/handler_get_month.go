@@ -6,7 +6,7 @@ import (
 )
 
 type GetMonth struct {
-	Website string
+	Website domain.WebsiteName
 	Month   domain.Month
 	Filter  domain.Filter
 }

@@ -6,7 +6,7 @@ import (
 )
 
 type GetRangeHourly struct {
-	Website string
+	Website domain.WebsiteName
 	From    domain.Hour
 	To      domain.Hour
 	Filter  domain.Filter

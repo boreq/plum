@@ -15,6 +15,6 @@ func NewGetWebsitesHandler(repositories *domain.Repositories) *GetWebsitesHandle
 	}
 }
 
-func (h *GetWebsitesHandler) Execute(query GetWebsites) ([]string, error) {
+func (h *GetWebsitesHandler) Execute(query GetWebsites) ([]domain.WebsiteName, error) {
 	return h.repositories.Names(), nil
 }

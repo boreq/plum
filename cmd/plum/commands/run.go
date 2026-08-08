@@ -48,6 +48,11 @@ func runRun(c guinea.Context) error {
 	for i := range conf.Websites {
 		website := conf.Websites[i]
 
+		websiteName, err := domain.NewWebsiteName(website.Name)
+		if err != nil {
+			return errors.Wrap(err, "could not create the website name")
+		}
+
 		p, err := parser.NewParser(getLogFormat(website.LogFormat))
 		if err != nil {
 			return err
@@ -78,7 +83,7 @@ func runRun(c guinea.Context) error {
 			errC <- tracker.Follow(website.Follow)
 		}()
 
-		if err := repositories.Add(website.Name, r); err != nil {
+		if err := repositories.Add(websiteName, r); err != nil {
 			return errors.Wrap(err, "could not add a repository")
 		}
 	}

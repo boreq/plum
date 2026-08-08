@@ -38,6 +38,14 @@ type Metrics struct {
 	BodyBytesSent int `json:"bytes"`
 }
 
+func newWebsites(websites []domain.WebsiteName) []string {
+	rv := make([]string, 0, len(websites))
+	for _, website := range websites {
+		rv = append(rv, website.String())
+	}
+	return rv
+}
+
 func NewRangeResult(rangeResult app.RangeResult) RangeResult {
 	series := make([]SeriesPoint, 0, len(rangeResult.Series))
 	for _, v := range rangeResult.Series {

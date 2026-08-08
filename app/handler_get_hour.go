@@ -6,7 +6,7 @@ import (
 )
 
 type GetHour struct {
-	Website string
+	Website domain.WebsiteName
 	Hour    domain.Hour
 	Filter  domain.Filter
 }

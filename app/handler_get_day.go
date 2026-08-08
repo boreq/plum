@@ -6,7 +6,7 @@ import (
 )
 
 type GetDay struct {
-	Website string
+	Website domain.WebsiteName
 	Day     domain.Day
 	Filter  domain.Filter
 }

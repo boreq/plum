@@ -6,7 +6,7 @@ import (
 )
 
 type GetRangeDaily struct {
-	Website string
+	Website domain.WebsiteName
 	From    domain.Day
 	To      domain.Day
 	Filter  domain.Filter

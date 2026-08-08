@@ -6,7 +6,7 @@ import (
 )
 
 type RepositoriesEntry struct {
-	Name       string
+	Name       WebsiteName
 	Repository *Repository
 }
 
@@ -20,7 +20,7 @@ func NewRepositories() *Repositories {
 	}
 }
 
-func (r *Repositories) Add(name string, repo *Repository) error {
+func (r *Repositories) Add(name WebsiteName, repo *Repository) error {
 	_, ok := r.Get(name)
 	if ok {
 		return fmt.Errorf("repository '%s' already exists", name)
@@ -34,7 +34,7 @@ func (r *Repositories) Add(name string, repo *Repository) error {
 	return nil
 }
 
-func (r *Repositories) Get(name string) (*Repository, bool) {
+func (r *Repositories) Get(name WebsiteName) (*Repository, bool) {
 	for _, entry := range r.repositories {
 		if entry.Name == name {
 			return entry.Repository, true
@@ -52,8 +52,8 @@ func (r *Repositories) RemoveOldData(now time.Time) {
 	}
 }
 
-func (r *Repositories) Names() []string {
-	var names []string
+func (r *Repositories) Names() []WebsiteName {
+	var names []WebsiteName
 
 	for _, entry := range r.repositories {
 		names = append(names, entry.Name)

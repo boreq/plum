@@ -59,7 +59,7 @@ func (h *Handler) websites(r *http.Request, ps httprouter.Params) (interface{}, 
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return websites, nil
+	return newWebsites(websites), nil
 }
 
 func (h *Handler) hour(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
@@ -73,8 +73,13 @@ func (h *Handler) hour(r *http.Request, ps httprouter.Params) (interface{}, api.
 		return nil, api.BadRequest
 	}
 
+	websiteName, err := getWebsiteName(ps)
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
 	summary, err := h.app.GetHour.Execute(app.GetHour{
-		Website: ps.ByName("name"),
+		Website: websiteName,
 		Hour:    hour,
 		Filter:  filter,
 	})
@@ -96,8 +101,13 @@ func (h *Handler) day(r *http.Request, ps httprouter.Params) (interface{}, api.E
 		return nil, api.BadRequest
 	}
 
+	websiteName, err := getWebsiteName(ps)
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
 	summary, err := h.app.GetDay.Execute(app.GetDay{
-		Website: ps.ByName("name"),
+		Website: websiteName,
 		Day:     day,
 		Filter:  filter,
 	})
@@ -119,8 +129,13 @@ func (h *Handler) month(r *http.Request, ps httprouter.Params) (interface{}, api
 		return nil, api.BadRequest
 	}
 
+	websiteName, err := getWebsiteName(ps)
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
 	summary, err := h.app.GetMonth.Execute(app.GetMonth{
-		Website: ps.ByName("name"),
+		Website: websiteName,
 		Month:   month,
 		Filter:  filter,
 	})
@@ -147,8 +162,13 @@ func (h *Handler) rangeHourly(r *http.Request, ps httprouter.Params) (interface{
 		return nil, api.BadRequest
 	}
 
+	websiteName, err := getWebsiteName(ps)
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
 	rangeResult, err := h.app.GetRangeHourly.Execute(app.GetRangeHourly{
-		Website: ps.ByName("name"),
+		Website: websiteName,
 		From:    from,
 		To:      to,
 		Filter:  filter,
@@ -176,8 +196,13 @@ func (h *Handler) rangeDaily(r *http.Request, ps httprouter.Params) (interface{}
 		return nil, api.BadRequest
 	}
 
+	websiteName, err := getWebsiteName(ps)
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
 	rangeResult, err := h.app.GetRangeDaily.Execute(app.GetRangeDaily{
-		Website: ps.ByName("name"),
+		Website: websiteName,
 		From:    from,
 		To:      to,
 		Filter:  filter,
@@ -205,8 +230,13 @@ func (h *Handler) rangeMonthly(r *http.Request, ps httprouter.Params) (interface
 		return nil, api.BadRequest
 	}
 
+	websiteName, err := getWebsiteName(ps)
+	if err != nil {
+		return nil, api.BadRequest
+	}
+
 	rangeResult, err := h.app.GetRangeMonthly.Execute(app.GetRangeMonthly{
-		Website: ps.ByName("name"),
+		Website: websiteName,
 		From:    from,
 		To:      to,
 		Filter:  filter,
@@ -216,6 +246,10 @@ func (h *Handler) rangeMonthly(r *http.Request, ps httprouter.Params) (interface
 	}
 
 	return NewRangeResult(rangeResult), nil
+}
+
+func getWebsiteName(ps httprouter.Params) (domain.WebsiteName, error) {
+	return domain.NewWebsiteName(ps.ByName("name"))
 }
 
 func mapError(err error) api.Error {

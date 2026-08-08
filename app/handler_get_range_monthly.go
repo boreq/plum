@@ -6,7 +6,7 @@ import (
 )
 
 type GetRangeMonthly struct {
-	Website string
+	Website domain.WebsiteName
 	From    domain.Month
 	To      domain.Month
 	Filter  domain.Filter
