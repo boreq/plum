@@ -13,8 +13,9 @@ import (
 const (
 	MaliciousRequestThreshold = 10
 
-	trafficWindow   = 7 * 24 * time.Hour
-	bucketKeyFormat = "2006-01-02"
+	trafficWindow     = 7 * 24 * time.Hour
+	bucketKeyFormat   = "2006-01-02"
+	maxUnescapePasses = 5
 )
 
 var automatedUserAgentNames = map[string]struct{}{
@@ -155,6 +156,7 @@ var maliciousFileNames = map[string]struct{}{
 	"appsettings.json":     {},
 	"aws-credentials.txt":  {},
 	"aws-ses.json":         {},
+	"config.inc.php.dist":  {},
 	"config.json":          {},
 	"config.php":           {},
 	"gcp-credentials.json": {},
@@ -409,6 +411,26 @@ func containsBrowserProduct(products []string) bool {
 	return false
 }
 
+func unescapeUri(uri string) string {
+	uri = strings.ToLower(uri)
+
+	for i := 0; i < maxUnescapePasses; i++ {
+		unescaped, err := url.PathUnescape(uri)
+		if err != nil {
+			break
+		}
+
+		unescaped = strings.ToLower(unescaped)
+		if unescaped == uri {
+			break
+		}
+
+		uri = unescaped
+	}
+
+	return uri
+}
+
 type request struct {
 	Uri      string
 	Path     string
@@ -418,10 +440,7 @@ type request struct {
 }
 
 func newRequest(uri string) request {
-	uri = strings.ToLower(uri)
-	if unescaped, err := url.PathUnescape(uri); err == nil {
-		uri = unescaped
-	}
+	uri = unescapeUri(uri)
 	path, query, _ := strings.Cut(uri, "?")
 
 	var segments []string

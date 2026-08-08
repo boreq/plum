@@ -104,6 +104,11 @@ func TestIsScanRequest(t *testing.T) {
 		{Uri: "/api/appsettings.json", Scan: true},
 		{Uri: "/config.json", Scan: true},
 		{Uri: "/static/config.json", Scan: true},
+		{Uri: "/config.inc.php.dist", Scan: true},
+		{Uri: "/%252eenv%252ecredentials", Scan: true},
+		{Uri: "/%2eenv", Scan: true},
+		{Uri: "/%25252e%25252e/%25252e%25252e/etc/passwd", Scan: true},
+		{Uri: "/phpmyadmin/config.inc.php.dist", Scan: true},
 		{Uri: "/deploy/aws/gcp-credentials.json", Scan: true},
 		{Uri: "/deploy/aws-credentials.txt", Scan: true},
 		{Uri: "/deploy/aws-ses.json", Scan: true},
@@ -659,6 +664,78 @@ func TestClassifyUserAgentName(t *testing.T) {
 		t.Run(testCase.UserAgent, func(t *testing.T) {
 			if category := classifyUserAgent(testCase.UserAgent, classifyReferenceTime); category != testCase.Category {
 				t.Errorf("got %q, want %q", category, testCase.Category)
+			}
+		})
+	}
+}
+
+func TestUnescapeUri(t *testing.T) {
+	testCases := []struct {
+		Name     string
+		Uri      string
+		Expected string
+	}{
+		{
+			Name:     "uri without escape sequences",
+			Uri:      "/blog/post",
+			Expected: "/blog/post",
+		},
+		{
+			Name:     "uri is lowercased",
+			Uri:      "/Blog/Post",
+			Expected: "/blog/post",
+		},
+		{
+			Name:     "single encoding",
+			Uri:      "/%2eenv",
+			Expected: "/.env",
+		},
+		{
+			Name:     "uppercase escape sequence",
+			Uri:      "/%2Eenv",
+			Expected: "/.env",
+		},
+		{
+			Name:     "double encoding",
+			Uri:      "/%252eenv%252ecredentials",
+			Expected: "/.env.credentials",
+		},
+		{
+			Name:     "triple encoding",
+			Uri:      "/%25252e%25252e/etc/passwd",
+			Expected: "/../etc/passwd",
+		},
+		{
+			Name:     "encoded query string",
+			Uri:      "/?rest_route=%2Fbatch%2Fv1",
+			Expected: "/?rest_route=/batch/v1",
+		},
+		{
+			Name:     "invalid escape sequence is left alone",
+			Uri:      "/50%-off",
+			Expected: "/50%-off",
+		},
+		{
+			Name:     "decoding stops at an invalid escape sequence",
+			Uri:      "/%2550%25-off",
+			Expected: "/%50%-off",
+		},
+		{
+			Name:     "plus is not treated as a space",
+			Uri:      "/a+b",
+			Expected: "/a+b",
+		},
+		{
+			Name:     "decoding is bounded",
+			Uri:      "/%25252525252e",
+			Expected: "/%2e",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(t *testing.T) {
+			if uri := unescapeUri(testCase.Uri); uri != testCase.Expected {
+				t.Errorf("got %q, want %q", uri, testCase.Expected)
 			}
 		})
 	}
