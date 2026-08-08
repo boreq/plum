@@ -12,7 +12,7 @@ import (
 
 const (
 	MaliciousRequestThreshold = 5
-	trafficWindow             = 14 * 24 * time.Hour
+	trafficWindow             = 30 * 24 * time.Hour
 
 	bucketKeyFormat   = "2006-01-02"
 	maxUnescapePasses = 5
