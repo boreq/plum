@@ -182,6 +182,8 @@ var maliciousFileNames = map[string]struct{}{
 }
 
 var maliciousDirectories = []string{
+	"wp-admin",
+	"wp-content",
 	"wp-includes",
 }
 
