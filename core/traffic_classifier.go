@@ -2,6 +2,7 @@ package core
 
 import (
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -156,6 +157,7 @@ var maliciousFileExtensions = []string{
 	".pem",
 	".key",
 	".log",
+	"~",
 }
 
 var maliciousFileNames = map[string]struct{}{
@@ -235,6 +237,8 @@ var maliciousRules = []func(r request) bool{
 	attemptsPathTraversal,
 	requestsNumberedPhpScript,
 	attemptsInjection,
+	obfuscatesPath,
+	requestsPunctuationPrefixedSegment,
 }
 
 type requestCounters struct {
@@ -465,6 +469,7 @@ func unescapeUri(uri string) string {
 }
 
 type request struct {
+	RawUri   string
 	Uri      string
 	Path     string
 	Query    string
@@ -472,8 +477,8 @@ type request struct {
 	FileName string
 }
 
-func newRequest(uri string) request {
-	uri = unescapeUri(uri)
+func newRequest(rawUri string) request {
+	uri := unescapeUri(rawUri)
 	path, query, _ := strings.Cut(uri, "?")
 
 	var segments []string
@@ -489,6 +494,7 @@ func newRequest(uri string) request {
 	}
 
 	return request{
+		RawUri:   rawUri,
 		Uri:      uri,
 		Path:     path,
 		Query:    query,
@@ -578,6 +584,69 @@ func requestsMaliciousFile(r request) bool {
 
 	for _, extension := range maliciousFileExtensions {
 		if strings.HasSuffix(r.FileName, extension) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func requestsPunctuationPrefixedSegment(r request) bool {
+	for _, segment := range r.Segments {
+		c := rune(segment[0])
+
+		if unicode.IsLetter(c) || unicode.IsDigit(c) {
+			continue
+		}
+
+		if strings.ContainsRune("._-~@", c) {
+			continue
+		}
+
+		return true
+	}
+
+	return false
+}
+
+func obfuscatesPath(r request) bool {
+	uri := strings.ToLower(r.RawUri)
+
+	for i := 0; i < maxUnescapePasses; i++ {
+		path, _, _ := strings.Cut(uri, "?")
+		if encodesAlphanumericCharacters(path) {
+			return true
+		}
+
+		unescaped, err := url.PathUnescape(uri)
+		if err != nil {
+			break
+		}
+
+		unescaped = strings.ToLower(unescaped)
+		if unescaped == uri {
+			break
+		}
+
+		uri = unescaped
+	}
+
+	return false
+}
+
+func encodesAlphanumericCharacters(path string) bool {
+	for i := 0; i+2 < len(path); i++ {
+		if path[i] != '%' {
+			continue
+		}
+
+		b, err := strconv.ParseUint(path[i+1:i+3], 16, 8)
+		if err != nil {
+			continue
+		}
+
+		c := byte(b)
+		if c >= 'a' && c <= 'z' || c >= '0' && c <= '9' {
 			return true
 		}
 	}
