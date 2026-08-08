@@ -40,6 +40,7 @@ var automatedUserAgentNames = map[string]struct{}{
 	"go-http-client":    {},
 	"scrapy":            {},
 	"apache-httpclient": {},
+	"java":              {},
 	"bun":               {},
 	"domaindrift":       {},
 	"axios":             {},

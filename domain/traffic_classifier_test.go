@@ -456,6 +456,10 @@ func TestClassifyUserAgentName(t *testing.T) {
 			Category:  CategoryAutomated,
 		},
 		{
+			UserAgent: "Java/1.8.0_292",
+			Category:  CategoryAutomated,
+		},
+		{
 			UserAgent: "GDELT-media-org-research/1.0 (academic)",
 			Category:  CategoryAutomated,
 		},
