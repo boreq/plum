@@ -93,6 +93,7 @@ func TestIsScanRequest(t *testing.T) {
 
 		{Uri: "/gcp-credentials.json", Scan: true},
 		{Uri: "/gcp.json", Scan: true},
+		{Uri: "/mail.config.js", Scan: true},
 		{Uri: "/aws-credentials%2etxt", Scan: true},
 		{Uri: "/aws-secret%2eyaml", Scan: true},
 		{Uri: "/aws-ses%2ejson", Scan: true},
