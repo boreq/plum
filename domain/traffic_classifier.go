@@ -178,6 +178,7 @@ var maliciousFileNames = map[string]struct{}{
 	"config.json":          {},
 	"config.php":           {},
 	"gcp-credentials.json": {},
+	"gradle.properties":    {},
 	"manifest.json":        {},
 	"secrets.json":         {},
 	"webpack-stats.json":   {},
