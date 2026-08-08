@@ -368,6 +368,22 @@ func TestClassifyUserAgentName(t *testing.T) {
 			Category:  CategoryAutomated,
 		},
 		{
+			UserAgent: "FrontPageDomainPipeline/1.0",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "OWLer",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "GDELT-media-org-research/1.0 (academic)",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "HNBlogArchive/0.1 (+https://news.ycombinator.com/)",
+			Category:  CategoryAutomated,
+		},
+		{
 			UserAgent: "console-feedreader/1.0",
 			Category:  CategoryAutomated,
 		},
