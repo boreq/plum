@@ -284,64 +284,123 @@ func TestIsScanRequest(t *testing.T) {
 	}
 }
 
-func TestClassifyMarksMaliciousAddresses(t *testing.T) {
+const classifierBrowserUserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36"
+
+func scannedData(remoteAddress string, requests int) *Data {
+	data := NewData()
+	for i := 0; i < requests; i++ {
+		data.Insert(&parser.Entry{
+			RemoteAddress:  remoteAddress,
+			UserAgent:      classifierBrowserUserAgent,
+			HttpRequestURI: "/.env",
+			Status:         "404",
+		}, CategoryMalicious)
+	}
+	return data
+}
+
+func TestClassifyDoesNotMarkMaliciousAddresses(t *testing.T) {
 	c := NewTrafficClassifier()
 	now := time.Now().UTC()
 
 	for i := 0; i <= MaliciousRequestThreshold; i++ {
-		c.Classify(classifierEntry("1.1.1.1", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "/.env", now.Add(-time.Duration(i)*time.Hour)))
+		c.Classify(classifierEntry("1.1.1.1", classifierBrowserUserAgent, "/.env", now))
 	}
 
-	if category := c.Classify(classifierEntry("1.1.1.1", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "/", now)); category != CategoryMalicious {
-		t.Errorf("got %q, want %q", category, CategoryMalicious)
-	}
-
-	if category := c.Classify(classifierEntry("2.2.2.2", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "/", now)); category != CategoryUnclassified {
+	if category := c.Classify(classifierEntry("1.1.1.1", classifierBrowserUserAgent, "/", now)); category != CategoryUnclassified {
 		t.Errorf("got %q, want %q", category, CategoryUnclassified)
 	}
 }
 
-func TestClassifyIgnoresRequestsOutsideOfTheWindow(t *testing.T) {
-	c := NewTrafficClassifier()
+func TestIsMaliciousMarksAddresses(t *testing.T) {
 	now := time.Now().UTC()
-	old := now.Add(-trafficWindow).Add(-24 * time.Hour)
 
+	m := NewMaliciousAddresses()
+	m.Insert(scannedData("1.1.1.1", MaliciousRequestThreshold+1), now)
+
+	if !m.IsMalicious("1.1.1.1", now) {
+		t.Error("the address should be malicious")
+	}
+
+	if m.IsMalicious("2.2.2.2", now) {
+		t.Error("the address should not be malicious")
+	}
+}
+
+func TestIsMaliciousIgnoresOtherCategories(t *testing.T) {
+	now := time.Now().UTC()
+
+	data := NewData()
 	for i := 0; i <= MaliciousRequestThreshold; i++ {
-		c.Classify(classifierEntry("1.1.1.1", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "/.env", old))
+		data.Insert(&parser.Entry{
+			RemoteAddress:  "1.1.1.1",
+			UserAgent:      classifierBrowserUserAgent,
+			HttpRequestURI: "/",
+			Status:         "200",
+		}, CategoryUnclassified)
 	}
 
-	if category := c.Classify(classifierEntry("1.1.1.1", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "/", now)); category != CategoryUnclassified {
-		t.Errorf("got %q, want %q", category, CategoryUnclassified)
-	}
-}
+	m := NewMaliciousAddresses()
+	m.Insert(data, now)
 
-func TestClassifyKeepsAddressesBelowTheThresholdUnclassified(t *testing.T) {
-	c := NewTrafficClassifier()
-	now := time.Now().UTC()
-
-	for i := 0; i < MaliciousRequestThreshold; i++ {
-		c.Classify(classifierEntry("1.1.1.1", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "/.env", now))
-	}
-
-	if category := c.Classify(classifierEntry("1.1.1.1", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "/", now)); category != CategoryUnclassified {
-		t.Errorf("got %q, want %q", category, CategoryUnclassified)
+	if m.IsMalicious("1.1.1.1", now) {
+		t.Error("the address should not be malicious")
 	}
 }
 
-func TestRemoveOldDataDiscardsAddresses(t *testing.T) {
-	c := NewTrafficClassifier()
+func TestIsMaliciousLooksBothWays(t *testing.T) {
 	now := time.Now().UTC()
 
-	c.Classify(classifierEntry("1.1.1.1", "curl/7.64.0", "/", now))
+	m := NewMaliciousAddresses()
+	m.Insert(scannedData("1.1.1.1", MaliciousRequestThreshold+1), now)
 
-	c.RemoveOldData(now)
-	if len(c.ips) != 1 {
-		t.Fatalf("got %v", c.ips)
+	before := now.Add(-trafficWindow).Add(24 * time.Hour)
+	if !m.IsMalicious("1.1.1.1", before) {
+		t.Error("the traffic which precedes the malicious requests should be malicious")
 	}
 
-	c.RemoveOldData(now.Add(trafficWindow).Add(24 * time.Hour))
-	if len(c.ips) != 0 {
-		t.Fatalf("got %v", c.ips)
+	after := now.Add(trafficWindow).Add(-24 * time.Hour)
+	if !m.IsMalicious("1.1.1.1", after) {
+		t.Error("the traffic which follows the malicious requests should be malicious")
+	}
+}
+
+func TestIsMaliciousIgnoresRequestsOutsideOfTheWindow(t *testing.T) {
+	now := time.Now().UTC()
+
+	m := NewMaliciousAddresses()
+	m.Insert(scannedData("1.1.1.1", MaliciousRequestThreshold+1), now)
+
+	if m.IsMalicious("1.1.1.1", now.Add(-trafficWindow).Add(-24*time.Hour)) {
+		t.Error("the address should not be malicious before the window")
+	}
+
+	if m.IsMalicious("1.1.1.1", now.Add(trafficWindow).Add(24*time.Hour)) {
+		t.Error("the address should not be malicious after the window")
+	}
+}
+
+func TestIsMaliciousRequiresTheThreshold(t *testing.T) {
+	now := time.Now().UTC()
+
+	m := NewMaliciousAddresses()
+	m.Insert(scannedData("1.1.1.1", MaliciousRequestThreshold), now)
+
+	if m.IsMalicious("1.1.1.1", now) {
+		t.Error("the address should not be malicious")
+	}
+}
+
+func TestIsMaliciousSumsBuckets(t *testing.T) {
+	now := time.Now().UTC()
+
+	m := NewMaliciousAddresses()
+	for i := 0; i <= MaliciousRequestThreshold; i++ {
+		m.Insert(scannedData("1.1.1.1", 1), now.Add(-time.Duration(i)*24*time.Hour))
+	}
+
+	if !m.IsMalicious("1.1.1.1", now) {
+		t.Error("the address should be malicious")
 	}
 }
 

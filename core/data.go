@@ -18,14 +18,14 @@ type Data struct {
 }
 
 func (d *Data) Insert(entry *parser.Entry, category Category) error {
-	visit := createVisitHash(entry)
-
 	categoryData := d.getOrCreateCategoryData(category)
-	uriData := categoryData.getOrCreateUriData(entry.HttpRequestURI)
+	remoteAddressData := categoryData.getOrCreateRemoteAddressData(entry.RemoteAddress)
+	remoteAddressData.Insert(entry.BodyBytesSent)
+	uriData := remoteAddressData.getOrCreateUriData(entry.HttpRequestURI)
 	statusData := uriData.getOrCreateStatusData(entry.Status)
 	refererData := statusData.getOrCreateRefererData(entry.Referer)
 	userAgentData := refererData.getOrCreateUserAgentData(entry.UserAgent, category)
-	userAgentData.Insert(visit, entry.BodyBytesSent)
+	userAgentData.Insert(entry.BodyBytesSent)
 
 	return nil
 }
@@ -34,7 +34,7 @@ func (d *Data) getOrCreateCategoryData(category Category) *CategoryData {
 	categoryData, ok := d.Categories[category]
 	if !ok {
 		categoryData = &CategoryData{
-			Uris: make(map[string]*UriData),
+			RemoteAddresses: make(map[string]*RemoteAddressData),
 		}
 		d.Categories[category] = categoryData
 	}
@@ -42,10 +42,29 @@ func (d *Data) getOrCreateCategoryData(category Category) *CategoryData {
 }
 
 type CategoryData struct {
+	RemoteAddresses map[string]*RemoteAddressData
+}
+
+func (b *CategoryData) getOrCreateRemoteAddressData(remoteAddress string) *RemoteAddressData {
+	remoteAddressData, ok := b.RemoteAddresses[remoteAddress]
+	if !ok {
+		remoteAddressData = &RemoteAddressData{
+			Uris: make(map[string]*UriData),
+		}
+		b.RemoteAddresses[remoteAddress] = remoteAddressData
+	}
+	return remoteAddressData
+}
+
+// RemoteAddressData aggregates the counters of the entire subtree so that the
+// malicious requests made by an address can be counted without descending into
+// it.
+type RemoteAddressData struct {
+	Counters
 	Uris map[string]*UriData
 }
 
-func (b *CategoryData) getOrCreateUriData(uri string) *UriData {
+func (b *RemoteAddressData) getOrCreateUriData(uri string) *UriData {
 	uriData, ok := b.Uris[uri]
 	if !ok {
 		uriData = &UriData{
@@ -99,7 +118,6 @@ func (b *RefererData) getOrCreateUserAgentData(userAgent string, category Catego
 		}
 
 		userAgentData = &UserAgentData{
-			Metrics: NewMetrics(),
 			Browser: browser,
 		}
 		b.UserAgents[userAgent] = userAgentData
@@ -108,7 +126,7 @@ func (b *RefererData) getOrCreateUserAgentData(userAgent string, category Catego
 }
 
 type UserAgentData struct {
-	Metrics
+	Counters
 	Browser *Browser
 }
 
@@ -116,10 +134,11 @@ var visitHash = crypto.SHA512_256
 
 const retainHashBytes = 8
 
-func createVisitHash(entry *parser.Entry) string {
+func createVisitHash(visitPrefix, remoteAddress, userAgent string) string {
 	h := visitHash.New()
-	h.Write([]byte(entry.RemoteAddress))
-	h.Write([]byte(entry.UserAgent))
+	h.Write([]byte(visitPrefix))
+	h.Write([]byte(remoteAddress))
+	h.Write([]byte(userAgent))
 	sum := h.Sum(nil)
 	return string(sum)[:retainHashBytes]
 }

@@ -7,47 +7,28 @@ import (
 )
 
 func TestCreateVisitHash(t *testing.T) {
-	entry := &parser.Entry{
-		RemoteAddress: "1.2.3.4",
-		UserAgent:     "user agent",
-	}
-	h := createVisitHash(entry)
+	h := createVisitHash("2020-01-01", "1.2.3.4", "user agent")
 	if len(h) != retainHashBytes {
 		t.Fatalf("length was %d", len(h))
 	}
 }
 
-func TestCreateVisitHashDependsOnAddressAndUserAgent(t *testing.T) {
-	base := &parser.Entry{
-		RemoteAddress: "1.2.3.4",
-		UserAgent:     "user agent",
+func TestCreateVisitHashDependsOnPrefixAddressAndUserAgent(t *testing.T) {
+	base := createVisitHash("2020-01-01", "1.2.3.4", "user agent")
+
+	if base != createVisitHash("2020-01-01", "1.2.3.4", "user agent") {
+		t.Fatal("the visit hash must be stable")
 	}
 
-	sameVisitor := &parser.Entry{
-		RemoteAddress:  "1.2.3.4",
-		UserAgent:      "user agent",
-		HttpRequestURI: "/other",
+	if base == createVisitHash("2020-01-02", "1.2.3.4", "user agent") {
+		t.Fatal("the visit prefix must affect the visit hash")
 	}
 
-	otherAddress := &parser.Entry{
-		RemoteAddress: "5.6.7.8",
-		UserAgent:     "user agent",
-	}
-
-	otherUserAgent := &parser.Entry{
-		RemoteAddress: "1.2.3.4",
-		UserAgent:     "other agent",
-	}
-
-	if createVisitHash(base) != createVisitHash(sameVisitor) {
-		t.Fatal("the uri must not affect the visit hash")
-	}
-
-	if createVisitHash(base) == createVisitHash(otherAddress) {
+	if base == createVisitHash("2020-01-01", "5.6.7.8", "user agent") {
 		t.Fatal("the remote address must affect the visit hash")
 	}
 
-	if createVisitHash(base) == createVisitHash(otherUserAgent) {
+	if base == createVisitHash("2020-01-01", "1.2.3.4", "other agent") {
 		t.Fatal("the user agent must affect the visit hash")
 	}
 }
@@ -91,6 +72,7 @@ func TestInsertStoresTheBrowserOfUnclassifiedTraffic(t *testing.T) {
 
 			userAgentData := data.
 				Categories[testCase.Category].
+				RemoteAddresses["1.2.3.4"].
 				Uris["/"].
 				Statuses["200"].
 				Referers[""].

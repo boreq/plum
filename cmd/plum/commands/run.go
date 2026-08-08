@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/boreq/errors"
+	"github.com/boreq/plum/parser"
 
 	"github.com/boreq/guinea"
 	"github.com/boreq/plum/app"
@@ -15,7 +16,6 @@ import (
 	"github.com/boreq/plum/core"
 	"github.com/boreq/plum/entrypoints/http"
 	"github.com/boreq/plum/entrypoints/timers"
-	"github.com/boreq/plum/parser"
 	"github.com/dustin/go-humanize"
 )
 

@@ -241,14 +241,7 @@ var maliciousRules = []func(r request) bool{
 	requestsPunctuationPrefixedSegment,
 }
 
-type requestCounters struct {
-	Malicious int
-	Automated int
-	Other     int
-}
-
 type TrafficClassifier struct {
-	ips map[string]map[string]*requestCounters
 	log logging.Logger
 }
 
@@ -260,11 +253,14 @@ func NewTrafficClassifier() *TrafficClassifier {
 	}
 
 	return &TrafficClassifier{
-		ips: make(map[string]map[string]*requestCounters),
 		log: log,
 	}
 }
 
+// Classify returns the category which can be determined by looking at a single
+// entry. The category of the traffic coming from the addresses which turn out
+// to be malicious is corrected by MaliciousAddresses when the data is
+// retrieved.
 func (c *TrafficClassifier) Classify(entry *parser.Entry) Category {
 	category := classifyUserAgent(entry.UserAgent, entry.Time)
 
@@ -272,60 +268,68 @@ func (c *TrafficClassifier) Classify(entry *parser.Entry) Category {
 		category = CategoryMalicious
 	}
 
-	c.insert(entry.RemoteAddress, entry.Time, category)
-
-	if category == CategoryMalicious {
-		return category
-	}
-
-	if c.maliciousRequests(entry.RemoteAddress, entry.Time) > MaliciousRequestThreshold {
-		return CategoryMalicious
-	}
-
 	return category
 }
 
-func (c *TrafficClassifier) RemoveOldData(now time.Time) {
-	for remoteAddress, buckets := range c.ips {
-		removeOldBuckets(buckets, now)
-		if len(buckets) == 0 {
-			delete(c.ips, remoteAddress)
-		}
+// MaliciousAddresses counts the malicious requests made by every address. It is
+// built out of the stored data before it is retrieved and discarded afterwards.
+type MaliciousAddresses struct {
+	ips     map[string]map[string]int
+	results map[resultKey]bool
+}
+
+type resultKey struct {
+	remoteAddress string
+	bucket        string
+}
+
+func NewMaliciousAddresses() *MaliciousAddresses {
+	return &MaliciousAddresses{
+		ips:     make(map[string]map[string]int),
+		results: make(map[resultKey]bool),
 	}
 }
 
-func (c *TrafficClassifier) insert(remoteAddress string, t time.Time, category Category) {
-	buckets, ok := c.ips[remoteAddress]
+func (m *MaliciousAddresses) Insert(data *Data, t time.Time) {
+	categoryData, ok := data.Categories[CategoryMalicious]
 	if !ok {
-		buckets = make(map[string]*requestCounters)
-		c.ips[remoteAddress] = buckets
+		return
 	}
 
 	key := bucketKey(t)
-	counters, ok := buckets[key]
-	if !ok {
-		counters = &requestCounters{}
-		buckets[key] = counters
-	}
 
-	switch category {
-	case CategoryMalicious:
-		counters.Malicious++
-	case CategoryAutomated:
-		counters.Automated++
-	default:
-		counters.Other++
-	}
+	for remoteAddress, remoteAddressData := range categoryData.RemoteAddresses {
+		buckets, ok := m.ips[remoteAddress]
+		if !ok {
+			buckets = make(map[string]int)
+			m.ips[remoteAddress] = buckets
+		}
 
-	removeOldBuckets(buckets, t)
+		buckets[key] += remoteAddressData.Hits
+	}
 }
 
-func (c *TrafficClassifier) maliciousRequests(remoteAddress string, t time.Time) int {
+// IsMalicious reports whether the address made enough malicious requests around
+// the provided point in time. The window extends both backwards and forwards so
+// that the traffic which precedes the malicious requests is recognized as well.
+func (m *MaliciousAddresses) IsMalicious(remoteAddress string, t time.Time) bool {
+	key := resultKey{remoteAddress: remoteAddress, bucket: bucketKey(t)}
+
+	if rv, ok := m.results[key]; ok {
+		return rv
+	}
+
+	rv := m.maliciousRequests(remoteAddress, t) > MaliciousRequestThreshold
+	m.results[key] = rv
+	return rv
+}
+
+func (m *MaliciousAddresses) maliciousRequests(remoteAddress string, t time.Time) int {
 	var malicious int
 
-	for key, counters := range c.ips[remoteAddress] {
+	for key, counter := range m.ips[remoteAddress] {
 		if bucketWithinWindow(key, t) {
-			malicious += counters.Malicious
+			malicious += counter
 		}
 	}
 
@@ -673,22 +677,9 @@ func bucketWithinWindow(key string, t time.Time) bool {
 	if err != nil {
 		return false
 	}
-	return !bucket.Before(windowStart(t)) && !bucket.After(t.UTC())
-}
-
-func removeOldBuckets(buckets map[string]*requestCounters, t time.Time) {
-	for key := range buckets {
-		bucket, err := parseBucketKey(key)
-		if err != nil || bucket.Before(windowStart(t)) {
-			delete(buckets, key)
-		}
-	}
+	return !bucket.Before(t.UTC().Add(-trafficWindow)) && !bucket.After(t.UTC().Add(trafficWindow))
 }
 
 func parseBucketKey(key string) (time.Time, error) {
 	return time.ParseInLocation(bucketKeyFormat, key, time.UTC)
-}
-
-func windowStart(t time.Time) time.Time {
-	return t.UTC().Add(-trafficWindow)
 }

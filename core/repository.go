@@ -68,10 +68,11 @@ func (r *Repository) RetrieveHour(year int, month time.Month, day int, hour int,
 	target := NewSummary()
 
 	t := time.Date(year, month, day, hour, 0, 0, 0, time.UTC)
+	maliciousAddresses := r.maliciousAddresses(t, t)
+
 	key := r.createKey(t)
 	if d, ok := r.data[key]; ok {
-		visitPrefix := t.Format(visitPrefixFormat)
-		mergeData(target, d, visitPrefix, filter)
+		mergeData(target, d, t, filter, maliciousAddresses)
 	}
 	return target, true
 }
@@ -82,11 +83,13 @@ func (r *Repository) RetrieveDay(year int, month time.Month, day int, filter Fil
 
 	target := NewSummary()
 
-	for _, t := range iterateDay(year, month, day) {
+	times := iterateDay(year, month, day)
+	maliciousAddresses := r.maliciousAddresses(times[0], times[len(times)-1])
+
+	for _, t := range times {
 		key := r.createKey(t)
 		if d, ok := r.data[key]; ok {
-			visitPrefix := t.Format(visitPrefixFormat)
-			mergeData(target, d, visitPrefix, filter)
+			mergeData(target, d, t, filter, maliciousAddresses)
 		}
 	}
 	return target, true
@@ -98,22 +101,37 @@ func (r *Repository) RetrieveMonth(year int, month time.Month, filter Filter) (*
 
 	target := NewSummary()
 
-	for _, t := range iterateMonth(year, month) {
+	times := iterateMonth(year, month)
+	maliciousAddresses := r.maliciousAddresses(times[0], times[len(times)-1])
+
+	for _, t := range times {
 		key := r.createKey(t)
 		if d, ok := r.data[key]; ok {
-			visitPrefix := t.Format(visitPrefixFormat)
-			mergeData(target, d, visitPrefix, filter)
+			mergeData(target, d, t, filter, maliciousAddresses)
 		}
 	}
 	return target, true
+}
+
+// maliciousAddresses counts the malicious requests made within the window
+// surrounding the retrieved range as the addresses which are malicious there
+// affect the categories of the entries which are about to be returned.
+func (r *Repository) maliciousAddresses(from, to time.Time) *MaliciousAddresses {
+	rv := NewMaliciousAddresses()
+
+	for t := from.Add(-trafficWindow); !t.After(to.Add(trafficWindow)); t = t.Add(time.Hour) {
+		if d, ok := r.data[r.createKey(t)]; ok {
+			rv.Insert(d, t)
+		}
+	}
+
+	return rv
 }
 
 // RemoveOldData discards the data which is older than the retention period.
 func (r *Repository) RemoveOldData(now time.Time) {
 	r.dataMutex.Lock()
 	defer r.dataMutex.Unlock()
-
-	r.classifier.RemoveOldData(now)
 
 	cutoff := retentionCutoff(now)
 
@@ -181,34 +199,45 @@ func iterateMonth(year int, month time.Month) []time.Time {
 	return result
 }
 
-func mergeData(target *Summary, source *Data, visitPrefix string, filter Filter) {
-	for category, categoryData := range source.Categories {
-		categoryMatches := filter.MatchesCategory(category)
+func mergeData(target *Summary, source *Data, t time.Time, filter Filter, maliciousAddresses *MaliciousAddresses) {
+	visitPrefix := t.Format(visitPrefixFormat)
 
-		for uri, uriData := range categoryData.Uris {
-			if !filter.MatchesUri(uri) {
-				continue
+	for storedCategory, categoryData := range source.Categories {
+		for remoteAddress, remoteAddressData := range categoryData.RemoteAddresses {
+			category := storedCategory
+			if maliciousAddresses.IsMalicious(remoteAddress, t) {
+				category = CategoryMalicious
 			}
 
-			for status, statusData := range uriData.Statuses {
-				if !filter.MatchesStatus(status) {
+			categoryMatches := filter.MatchesCategory(category)
+
+			for uri, uriData := range remoteAddressData.Uris {
+				if !filter.MatchesUri(uri) {
 					continue
 				}
 
-				for referer, refererData := range statusData.Referers {
-					if !filter.MatchesReferer(referer) {
+				for status, statusData := range uriData.Statuses {
+					if !filter.MatchesStatus(status) {
 						continue
 					}
 
-					for userAgent, userAgentData := range refererData.UserAgents {
-						if !filter.MatchesUserAgent(userAgent) {
+					for referer, refererData := range statusData.Referers {
+						if !filter.MatchesReferer(referer) {
 							continue
 						}
 
-						target.InsertCategoryLeaf(category, userAgentData.Metrics, visitPrefix)
+						for userAgent, userAgentData := range refererData.UserAgents {
+							if !filter.MatchesUserAgent(userAgent) {
+								continue
+							}
 
-						if categoryMatches {
-							target.InsertLeaf(uri, status, referer, userAgent, userAgentData.Browser, userAgentData.Metrics, visitPrefix)
+							visit := createVisitHash(visitPrefix, remoteAddress, userAgent)
+
+							target.InsertCategoryLeaf(category, visit, userAgentData.Counters)
+
+							if categoryMatches {
+								target.InsertLeaf(uri, status, referer, userAgent, userAgentData.Browser, visit, userAgentData.Counters)
+							}
 						}
 					}
 				}

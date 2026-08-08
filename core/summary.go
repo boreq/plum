@@ -29,12 +29,12 @@ type UserAgentMetrics struct {
 	Browser *Browser
 }
 
-func (s *Summary) InsertLeaf(uri, status, referer, userAgent string, browser *Browser, metrics Metrics, visitPrefix string) {
-	s.Add(metrics, visitPrefix)
-	getOrCreateMetrics(s.Uris, uri).Add(metrics, visitPrefix)
-	getOrCreateMetrics(s.Statuses, status).Add(metrics, visitPrefix)
-	getOrCreateMetrics(s.Referers, referer).Add(metrics, visitPrefix)
-	getOrCreateUserAgentMetrics(s.UserAgents, userAgent, browser).Add(metrics, visitPrefix)
+func (s *Summary) InsertLeaf(uri, status, referer, userAgent string, browser *Browser, visit string, counters Counters) {
+	s.Insert(visit, counters)
+	getOrCreateMetrics(s.Uris, uri).Insert(visit, counters)
+	getOrCreateMetrics(s.Statuses, status).Insert(visit, counters)
+	getOrCreateMetrics(s.Referers, referer).Insert(visit, counters)
+	getOrCreateUserAgentMetrics(s.UserAgents, userAgent, browser).Insert(visit, counters)
 }
 
 func getOrCreateUserAgentMetrics(target map[string]*UserAgentMetrics, userAgent string, browser *Browser) *Metrics {
@@ -75,8 +75,8 @@ func (s *Summary) Merge(other *Summary) {
 	}
 }
 
-func (s *Summary) InsertCategoryLeaf(category Category, metrics Metrics, visitPrefix string) {
-	getOrCreateMetrics(s.Categories, category).Add(metrics, visitPrefix)
+func (s *Summary) InsertCategoryLeaf(category Category, visit string, counters Counters) {
+	getOrCreateMetrics(s.Categories, category).Insert(visit, counters)
 }
 
 func getOrCreateMetrics[K comparable](target map[K]*Metrics, key K) *Metrics {

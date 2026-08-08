@@ -45,6 +45,47 @@ func TestRemoveOldData(t *testing.T) {
 	}
 }
 
+func TestRetrieveMarksEarlierTrafficOfMaliciousAddresses(t *testing.T) {
+	r := NewRepository(config.Website{})
+
+	now := time.Now().UTC()
+	day := now.Add(-24 * time.Hour)
+
+	entry := newTestEntry(day)
+	entry.UserAgent = classifierBrowserUserAgent
+	if err := r.Insert(entry); err != nil {
+		t.Fatalf("error: %v", err)
+	}
+
+	summary, _ := r.RetrieveDay(day.Year(), day.Month(), day.Day(), Filter{})
+	if hits := summary.Categories[CategoryUnclassified].Hits; hits != 1 {
+		t.Fatalf("got %d unclassified hits", hits)
+	}
+
+	for i := 0; i <= MaliciousRequestThreshold; i++ {
+		scan := newTestEntry(now)
+		scan.RemoteAddress = entry.RemoteAddress
+		scan.UserAgent = classifierBrowserUserAgent
+		scan.HttpRequestURI = "/.env"
+		if err := r.Insert(scan); err != nil {
+			t.Fatalf("error: %v", err)
+		}
+	}
+
+	summary, _ = r.RetrieveDay(day.Year(), day.Month(), day.Day(), Filter{})
+	if hits := summary.Categories[CategoryUnclassified].Hits; hits != 0 {
+		t.Fatalf("got %d unclassified hits", hits)
+	}
+	if hits := summary.Categories[CategoryMalicious].Hits; hits != 1 {
+		t.Fatalf("got %d malicious hits", hits)
+	}
+
+	summary, _ = r.RetrieveDay(day.Year(), day.Month(), day.Day(), Filter{Category: CategoryMalicious})
+	if hits := summary.Metrics.Hits; hits != 1 {
+		t.Fatalf("got %d hits for the malicious filter", hits)
+	}
+}
+
 func newTestEntry(t time.Time) *parser.Entry {
 	return &parser.Entry{
 		Time:           t,

@@ -12,10 +12,20 @@ type Metrics struct {
 	BodyBytesSent int
 }
 
-func (m *Metrics) Insert(visit string, bodyBytesSent int) {
+type Counters struct {
+	Hits          int
+	BodyBytesSent int
+}
+
+func (c *Counters) Insert(bodyBytesSent int) {
+	c.Hits++
+	c.BodyBytesSent += bodyBytesSent
+}
+
+func (m *Metrics) Insert(visit string, counters Counters) {
 	m.Visits.Add(visit)
-	m.Hits++
-	m.BodyBytesSent += bodyBytesSent
+	m.Hits += counters.Hits
+	m.BodyBytesSent += counters.BodyBytesSent
 }
 
 func (m *Metrics) Add(other Metrics, visitPrefix string) {
