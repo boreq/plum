@@ -157,6 +157,13 @@ var maliciousFileNames = map[string]struct{}{
 	"aws-credentials.txt":  {},
 	"aws-ses.json":         {},
 	"config.inc.php.dist":  {},
+	"dockerfile":           {},
+	"next.config.js":       {},
+	"next.config.mjs":      {},
+	"next.config.ts":       {},
+	"nuxt.config.js":       {},
+	"nuxt.config.mjs":      {},
+	"nuxt.config.ts":       {},
 	"config.json":          {},
 	"config.php":           {},
 	"gcp-credentials.json": {},
@@ -185,6 +192,7 @@ var maliciousDirectories = []string{
 	"wp-admin",
 	"wp-content",
 	"wp-includes",
+	"wp-json",
 }
 
 var injectionMarkers = []string{
