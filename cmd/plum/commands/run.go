@@ -2,11 +2,12 @@ package commands
 
 import (
 	"encoding/json"
-	"github.com/boreq/errors"
 	"os"
 	"path/filepath"
 	"runtime"
 	"time"
+
+	"github.com/boreq/errors"
 
 	"github.com/boreq/guinea"
 	"github.com/boreq/plum/app"
@@ -63,7 +64,7 @@ func runRun(c guinea.Context) error {
 		for _, glob := range website.Load {
 			paths, err := filepath.Glob(glob)
 			if err != nil {
-				return errors.Wrapf(err,  "could not process a glob pattern '%s", glob)
+				return errors.Wrapf(err, "could not process a glob pattern '%s", glob)
 			}
 
 			for _, path := range paths {

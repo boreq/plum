@@ -22,6 +22,10 @@ log:
 	scp server:/var/log/nginx/moooodotfarm.access.log ./_logs/moooodotfarm.access.log
 	scp server:/var/log/nginx/drive.access.log ./_logs/drive.access.log
 
+.PHONY: fmt
+fmt:
+	goimports -w $(shell find . -name '*.go' -not -path './plum-frontend/*' -not -path './statik/*')
+
 .PHONY: test
 test:
 	go test ./...

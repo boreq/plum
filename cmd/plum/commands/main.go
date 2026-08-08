@@ -10,7 +10,7 @@ var log = logging.New("main/commands")
 var MainCmd = guinea.Command{
 	Run: runMain,
 	Subcommands: map[string]*guinea.Command{
-		"run": &runCmd,
+		"run":            &runCmd,
 		"default_config": &defaultConfigCmd,
 	},
 	ShortDescription: "a real-time access log analyser",
