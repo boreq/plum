@@ -178,6 +178,7 @@ func TestIsScanRequest(t *testing.T) {
 		{Uri: "/bless.php", Scan: true},
 		{Uri: "/blurbs.php", Scan: true},
 		{Uri: "/bolt.php", Scan: true},
+		{Uri: "/chosen.php", Scan: true},
 		{Uri: "/cjfuns.php", Scan: true},
 		{Uri: "/class-t.api.php", Scan: true},
 		{Uri: "/cord.php", Scan: true},

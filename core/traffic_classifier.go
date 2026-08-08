@@ -183,6 +183,7 @@ var maliciousFileNames = map[string]struct{}{
 	"bless.php":                     {},
 	"blurbs.php":                    {},
 	"bolt.php":                      {},
+	"chosen.php":                    {},
 	"cjfuns.php":                    {},
 	"class-t.api.php":               {},
 	"classwithtostring.php":         {},
