@@ -376,7 +376,7 @@ func TestClassifyUserAgentName(t *testing.T) {
 			Category:  CategoryAutomated,
 		},
 		{
-			UserAgent: "Dart/3.9",
+			UserAgent: "Dart/3.11 (dart:io)",
 			Category:  CategoryAutomated,
 		},
 		{
