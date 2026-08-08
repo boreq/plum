@@ -162,7 +162,13 @@ var maliciousFileExtensions = []string{
 }
 
 var maliciousFileNames = map[string]struct{}{
-	"appsettings.json":     {},
+	"appsettings.json":             {},
+	"appsettings.development.json": {},
+	"appsettings.production.json":  {},
+	"appsettings.staging.json":     {},
+
+	"application-dev.properties": {},
+
 	"asset-manifest.json":  {},
 	"aws-credentials.txt":  {},
 	"aws-ses.json":         {},
@@ -177,7 +183,9 @@ var maliciousFileNames = map[string]struct{}{
 	"nuxt.config.ts":       {},
 	"config.json":          {},
 	"config.php":           {},
+	"credentials.json":     {},
 	"gcp-credentials.json": {},
+	"gcp.json":             {},
 	"gradle.properties":    {},
 	"manifest.json":        {},
 	"secrets.json":         {},

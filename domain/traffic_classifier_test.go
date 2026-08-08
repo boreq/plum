@@ -92,6 +92,7 @@ func TestIsScanRequest(t *testing.T) {
 		{Uri: "/.DS_Store", Scan: true},
 
 		{Uri: "/gcp-credentials.json", Scan: true},
+		{Uri: "/gcp.json", Scan: true},
 		{Uri: "/aws-credentials%2etxt", Scan: true},
 		{Uri: "/aws-secret%2eyaml", Scan: true},
 		{Uri: "/aws-ses%2ejson", Scan: true},
@@ -105,6 +106,10 @@ func TestIsScanRequest(t *testing.T) {
 		{Uri: "/storage/logs/laravel.log", Scan: true},
 		{Uri: "/appsettings.json", Scan: true},
 		{Uri: "/api/appsettings.json", Scan: true},
+		{Uri: "/appsettings.Production.json", Scan: true},
+		{Uri: "/appsettings.Development.json", Scan: true},
+		{Uri: "/application-dev.properties", Scan: true},
+		{Uri: "/app/credentials.json", Scan: true},
 		{Uri: "/config.json", Scan: true},
 		{Uri: "/static/config.json", Scan: true},
 		{Uri: "/config.inc.php.dist", Scan: true},
