@@ -1,0 +1,18 @@
+version: "2"
+
+linters:
+  enable:
+    - bodyclose
+    - errorlint
+    - misspell
+    - noctx
+    - unconvert
+  exclusions:
+    paths:
+      - statik
+  settings:
+    errcheck:
+      exclude-functions:
+        - (io.Closer).Close
+        - (*os.File).Close
+        - (*os.Process).Kill

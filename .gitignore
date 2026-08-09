@@ -1,5 +1,5 @@
 build/
 _*
-cmd/plum/plum
+plum-backend/cmd/plum/plum
 config.json
 .idea

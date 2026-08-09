@@ -8,15 +8,7 @@ access the statistics using a web dashboard.
 Plum is written in Go which means that the Go tools can be used to install the
 program using the following command:
 
-    $  go get github.com/boreq/plum/cmd/plum
-
-If you prefer to do this by hand clone the repository and execute the `make`
-program:
-
-    $ git clone https://github.com/boreq/plum
-    $ make
-    $ ls build
-    plum
+    $  go install github.com/boreq/plum/plum-backend/cmd/plum@latest
 
 ## Usage
 
