@@ -10,7 +10,7 @@ import (
 	"github.com/boreq/plum/plum-backend/app"
 	"github.com/boreq/plum/plum-backend/domain"
 	"github.com/boreq/plum/plum-backend/entrypoints/http/api"
-	_ "github.com/boreq/plum/plum-backend/statik"
+	_ "github.com/boreq/plum/plum-backend/entrypoints/http/statik"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rakyll/statik/fs"
 )

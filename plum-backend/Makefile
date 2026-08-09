@@ -40,7 +40,7 @@ build-race:
 
 .PHONY: fmt
 fmt:
-	goimports -w $(shell find . -name '*.go' -not -path './statik/*')
+	goimports -w $(shell find . -name '*.go' -not -path './entrypoints/http/statik/*')
 
 .PHONY: test
 test:

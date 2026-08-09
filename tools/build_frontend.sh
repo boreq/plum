@@ -14,4 +14,4 @@ cd ../plum-backend
 echo "Running https://github.com/rakyll/statik"
 # -m omits modification times so that identical assets always produce an
 # identical statik.go
-go run github.com/rakyll/statik -f -m -src=../plum-frontend/dist
+go run github.com/rakyll/statik -f -m -dest=./entrypoints/http -src=../plum-frontend/dist

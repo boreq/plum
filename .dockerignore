@@ -1,0 +1,6 @@
+plum-frontend
+plum-backend/build
+build
+_*
+.git
+.idea
