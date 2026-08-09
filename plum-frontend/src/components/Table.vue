@@ -51,7 +51,7 @@
                             </a>
                         </div>
                         <div class="sidebar-body">
-                            <div class="table large">
+                            <div class="table">
                                 <div class="thead" v-if="header">
                                     <div class="th" v-for="(column, index) in header.columns" :key="index" :style="getColumnStyle(index)"
                                          v-bind:class="{sortable: isSortable(index), sorted: sortColumn === index}"
