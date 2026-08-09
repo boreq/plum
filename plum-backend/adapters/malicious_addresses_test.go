@@ -1,0 +1,121 @@
+package adapters
+
+import (
+	"testing"
+	"time"
+
+	"github.com/boreq/plum/plum-backend/domain"
+	"github.com/boreq/plum/plum-backend/domain/parser"
+)
+
+func scan(t time.Time, remoteAddress string) *parser.Entry {
+	return &parser.Entry{
+		Time:           t,
+		RemoteAddress:  remoteAddress,
+		UserAgent:      classifierBrowserUserAgent,
+		HttpRequestURI: "/.env",
+		Status:         "404",
+	}
+}
+
+func insertScans(m *MaliciousAddresses, t time.Time, remoteAddress string, requests int) {
+	for i := 0; i < requests; i++ {
+		m.Insert(scan(t, remoteAddress), domain.CategoryMalicious)
+	}
+}
+
+func TestIsIpMaliciousMarksAddresses(t *testing.T) {
+	now := time.Now().UTC()
+
+	m := NewMaliciousAddresses()
+	insertScans(m, now, "1.1.1.1", domain.MaliciousRequestThreshold+1)
+
+	if !m.IsIpMalicious(now, "1.1.1.1") {
+		t.Error("the address should be malicious")
+	}
+
+	if m.IsIpMalicious(now, "2.2.2.2") {
+		t.Error("the address should not be malicious")
+	}
+}
+
+func TestIsIpMaliciousRequiresTheThreshold(t *testing.T) {
+	now := time.Now().UTC()
+
+	m := NewMaliciousAddresses()
+	insertScans(m, now, "1.1.1.1", domain.MaliciousRequestThreshold)
+
+	if m.IsIpMalicious(now, "1.1.1.1") {
+		t.Error("the address should not be malicious")
+	}
+}
+
+func TestIsIpMaliciousIgnoresOtherCategories(t *testing.T) {
+	now := time.Now().UTC()
+
+	m := NewMaliciousAddresses()
+	for i := 0; i <= domain.MaliciousRequestThreshold; i++ {
+		m.Insert(scan(now, "1.1.1.1"), domain.CategoryUnclassified)
+	}
+
+	if m.IsIpMalicious(now, "1.1.1.1") {
+		t.Error("the address should not be malicious")
+	}
+}
+
+func TestIsIpMaliciousSumsDaysWithinTheWindow(t *testing.T) {
+	now := time.Now().UTC()
+
+	m := NewMaliciousAddresses()
+	for i := 0; i <= domain.MaliciousRequestThreshold; i++ {
+		insertScans(m, now.AddDate(0, 0, -i), "1.1.1.1", 1)
+	}
+
+	if !m.IsIpMalicious(now, "1.1.1.1") {
+		t.Error("the address should be malicious")
+	}
+}
+
+func TestIsIpMaliciousIgnoresTrafficOutsideOfTheWindow(t *testing.T) {
+	now := time.Now().UTC()
+
+	m := NewMaliciousAddresses()
+	insertScans(m, now, "1.1.1.1", domain.MaliciousRequestThreshold+1)
+
+	if m.IsIpMalicious(now.Add(-2*domain.TrafficWindow), "1.1.1.1") {
+		t.Error("the address should not be malicious")
+	}
+
+	if !m.IsIpMalicious(now.Add(-domain.TrafficWindow).AddDate(0, 0, 1), "1.1.1.1") {
+		t.Error("the address should be malicious")
+	}
+}
+
+func TestInsertIgnoresOldScans(t *testing.T) {
+	now := time.Now().UTC()
+	old := now.Add(-RetentionPeriod).Add(-time.Hour)
+
+	m := NewMaliciousAddresses()
+	insertScans(m, old, "1.1.1.1", domain.MaliciousRequestThreshold+1)
+
+	if len(m.hits) != 0 {
+		t.Fatalf("error: %v", m.hits)
+	}
+}
+
+func TestMaliciousAddressesRemoveOldData(t *testing.T) {
+	now := time.Now().UTC()
+
+	m := NewMaliciousAddresses()
+	insertScans(m, now, "1.1.1.1", domain.MaliciousRequestThreshold+1)
+
+	m.RemoveOldData(now)
+	if len(m.hits) != 1 {
+		t.Fatalf("error: %v", m.hits)
+	}
+
+	m.RemoveOldData(now.Add(RetentionPeriod).AddDate(0, 0, 1))
+	if len(m.hits) != 0 {
+		t.Fatalf("error: %v", m.hits)
+	}
+}

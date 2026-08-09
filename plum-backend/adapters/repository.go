@@ -24,19 +24,19 @@ const visitPrefixFormat = "2006-01-02"
 const RetentionPeriod = 365 * 24 * time.Hour
 
 type Repository struct {
-	data         map[string]*domain.Data
-	dataMutex    sync.Mutex
-	repositories *Repositories
-	conf         config.Website
-	log          logging.Logger
+	data               map[string]*domain.Data
+	dataMutex          sync.Mutex
+	maliciousAddresses *MaliciousAddresses
+	conf               config.Website
+	log                logging.Logger
 }
 
-func NewRepository(conf config.Website, repositories *Repositories) *Repository {
+func NewRepository(conf config.Website, maliciousAddresses *MaliciousAddresses) *Repository {
 	rv := &Repository{
-		data:         make(map[string]*domain.Data),
-		repositories: repositories,
-		log:          logging.New("repository"),
-		conf:         conf,
+		data:               make(map[string]*domain.Data),
+		maliciousAddresses: maliciousAddresses,
+		log:                logging.New("repository"),
+		conf:               conf,
 	}
 	return rv
 }
@@ -62,7 +62,6 @@ func (r *Repository) Insert(entry *parser.Entry, category domain.Category) error
 
 func (r *Repository) RetrieveHour(year int, month time.Month, day int, hour int, filter domain.Filter) (*domain.Summary, bool) {
 	t := time.Date(year, month, day, hour, 0, 0, 0, time.UTC)
-	maliciousAddresses := r.maliciousAddresses(t, t)
 
 	r.dataMutex.Lock()
 	defer r.dataMutex.Unlock()
@@ -71,14 +70,13 @@ func (r *Repository) RetrieveHour(year int, month time.Month, day int, hour int,
 
 	key := r.createKey(t)
 	if d, ok := r.data[key]; ok {
-		mergeData(target, d, t, filter, maliciousAddresses)
+		mergeData(target, d, t, filter, r.maliciousAddresses)
 	}
 	return target, true
 }
 
 func (r *Repository) RetrieveDay(year int, month time.Month, day int, filter domain.Filter) (*domain.Summary, bool) {
 	times := iterateDay(year, month, day)
-	maliciousAddresses := r.maliciousAddresses(times[0], times[len(times)-1])
 
 	r.dataMutex.Lock()
 	defer r.dataMutex.Unlock()
@@ -88,7 +86,7 @@ func (r *Repository) RetrieveDay(year int, month time.Month, day int, filter dom
 	for _, t := range times {
 		key := r.createKey(t)
 		if d, ok := r.data[key]; ok {
-			mergeData(target, d, t, filter, maliciousAddresses)
+			mergeData(target, d, t, filter, r.maliciousAddresses)
 		}
 	}
 	return target, true
@@ -96,7 +94,6 @@ func (r *Repository) RetrieveDay(year int, month time.Month, day int, filter dom
 
 func (r *Repository) RetrieveMonth(year int, month time.Month, filter domain.Filter) (*domain.Summary, bool) {
 	times := iterateMonth(year, month)
-	maliciousAddresses := r.maliciousAddresses(times[0], times[len(times)-1])
 
 	r.dataMutex.Lock()
 	defer r.dataMutex.Unlock()
@@ -106,29 +103,10 @@ func (r *Repository) RetrieveMonth(year int, month time.Month, filter domain.Fil
 	for _, t := range times {
 		key := r.createKey(t)
 		if d, ok := r.data[key]; ok {
-			mergeData(target, d, t, filter, maliciousAddresses)
+			mergeData(target, d, t, filter, r.maliciousAddresses)
 		}
 	}
 	return target, true
-}
-
-func (r *Repository) maliciousAddresses(from, to time.Time) *domain.MaliciousAddresses {
-	rv := domain.NewMaliciousAddresses()
-	r.repositories.ForEachData(from.Add(-domain.TrafficWindow), to.Add(domain.TrafficWindow), func(t time.Time, data *domain.Data) {
-		rv.Insert(data)
-	})
-	return rv
-}
-
-func (r *Repository) forEachData(from, to time.Time, fn func(t time.Time, data *domain.Data)) {
-	r.dataMutex.Lock()
-	defer r.dataMutex.Unlock()
-
-	for t := from; !t.After(to); t = t.Add(time.Hour) {
-		if d, ok := r.data[r.createKey(t)]; ok {
-			fn(t, d)
-		}
-	}
 }
 
 func (r *Repository) RemoveOldData(now time.Time) {
@@ -201,13 +179,13 @@ func iterateMonth(year int, month time.Month) []time.Time {
 	return result
 }
 
-func mergeData(target *domain.Summary, source *domain.Data, t time.Time, filter domain.Filter, maliciousAddresses *domain.MaliciousAddresses) {
+func mergeData(target *domain.Summary, source *domain.Data, t time.Time, filter domain.Filter, maliciousAddresses *MaliciousAddresses) {
 	visitPrefix := t.Format(visitPrefixFormat)
 
 	for storedCategory, categoryData := range source.Categories {
 		for remoteAddress, remoteAddressData := range categoryData.RemoteAddresses {
 			category := storedCategory
-			if maliciousAddresses.IsMalicious(remoteAddress) {
+			if maliciousAddresses.IsIpMalicious(t, remoteAddress) {
 				category = domain.CategoryMalicious
 			}
 

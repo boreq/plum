@@ -26,6 +26,11 @@ type Repositories interface {
 	RemoveOldData(now time.Time)
 }
 
+type MaliciousAddresses interface {
+	Insert(entry *parser.Entry, category domain.Category)
+	RemoveOldData(now time.Time)
+}
+
 type Application struct {
 	GetWebsites     *GetWebsitesHandler
 	GetHour         *GetHourHandler
@@ -38,7 +43,7 @@ type Application struct {
 	AddRequest      *AddRequestHandler
 }
 
-func New(repositories Repositories) *Application {
+func New(repositories Repositories, maliciousAddresses MaliciousAddresses) *Application {
 	return &Application{
 		GetWebsites:     NewGetWebsitesHandler(repositories),
 		GetHour:         NewGetHourHandler(repositories),
@@ -47,8 +52,8 @@ func New(repositories Repositories) *Application {
 		GetRangeHourly:  NewGetRangeHourlyHandler(repositories),
 		GetRangeDaily:   NewGetRangeDailyHandler(repositories),
 		GetRangeMonthly: NewGetRangeMonthlyHandler(repositories),
-		RemoveOldData:   NewRemoveOldDataHandler(repositories),
-		AddRequest:      NewAddRequestHandler(repositories, domain.NewTrafficClassifier()),
+		RemoveOldData:   NewRemoveOldDataHandler(repositories, maliciousAddresses),
+		AddRequest:      NewAddRequestHandler(repositories, maliciousAddresses, domain.NewTrafficClassifier()),
 	}
 }
 

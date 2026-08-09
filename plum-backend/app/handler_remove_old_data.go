@@ -7,16 +7,19 @@ type RemoveOldData struct {
 }
 
 type RemoveOldDataHandler struct {
-	repositories Repositories
+	repositories       Repositories
+	maliciousAddresses MaliciousAddresses
 }
 
-func NewRemoveOldDataHandler(repositories Repositories) *RemoveOldDataHandler {
+func NewRemoveOldDataHandler(repositories Repositories, maliciousAddresses MaliciousAddresses) *RemoveOldDataHandler {
 	return &RemoveOldDataHandler{
-		repositories: repositories,
+		repositories:       repositories,
+		maliciousAddresses: maliciousAddresses,
 	}
 }
 
 func (h *RemoveOldDataHandler) Execute(cmd RemoveOldData) error {
 	h.repositories.RemoveOldData(cmd.Now)
+	h.maliciousAddresses.RemoveOldData(cmd.Now)
 	return nil
 }

@@ -23,7 +23,7 @@ func TestNewRangeResultJSON(t *testing.T) {
 		t.Fatalf("website name: %v", err)
 	}
 
-	repository := adapters.NewRepository(config.Website{}, repositories)
+	repository := adapters.NewRepository(config.Website{}, adapters.NewMaliciousAddresses())
 	if err := repositories.Add(websiteName, repository); err != nil {
 		t.Fatalf("add: %v", err)
 	}

@@ -27,7 +27,7 @@ func newRepository(t *testing.T) *Repository {
 		t.Fatalf("website name: %v", err)
 	}
 
-	repository := NewRepository(config.Website{}, repositories)
+	repository := NewRepository(config.Website{}, NewMaliciousAddresses())
 	if err := repositories.Add(name, repository); err != nil {
 		t.Fatalf("add: %v", err)
 	}
@@ -65,7 +65,11 @@ func testEntryWithUserAgent(userAgent, remoteAddress, uri, status, referer strin
 func insert(t *testing.T, r *Repository, entry *parser.Entry) {
 	t.Helper()
 
-	if err := r.Insert(entry, testClassifier.Classify(entry)); err != nil {
+	category := testClassifier.Classify(entry)
+
+	r.maliciousAddresses.Insert(entry, category)
+
+	if err := r.Insert(entry, category); err != nil {
 		t.Fatalf("insert: %v", err)
 	}
 }

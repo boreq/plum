@@ -43,10 +43,11 @@ func runRun(c guinea.Context) error {
 	errC := make(chan error)
 
 	repositories := adapters.NewRepositories()
+	maliciousAddresses := adapters.NewMaliciousAddresses()
 
 	go logMemoryStats()
 
-	application := app.New(repositories)
+	application := app.New(repositories, maliciousAddresses)
 
 	for i := range conf.Websites {
 		website := conf.Websites[i]
@@ -61,7 +62,7 @@ func runRun(c guinea.Context) error {
 			return err
 		}
 
-		if err := repositories.Add(websiteName, adapters.NewRepository(website, repositories)); err != nil {
+		if err := repositories.Add(websiteName, adapters.NewRepository(website, maliciousAddresses)); err != nil {
 			return errors.Wrap(err, "could not add a repository")
 		}
 

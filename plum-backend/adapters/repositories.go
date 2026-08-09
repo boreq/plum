@@ -69,17 +69,6 @@ func (r *Repositories) RemoveOldData(now time.Time) {
 	}
 }
 
-// ForEachData calls the provided function for every hour of the data stored in
-// all repositories which falls within the provided range.
-func (r *Repositories) ForEachData(from, to time.Time, fn func(t time.Time, data *domain.Data)) {
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
-
-	for _, entry := range r.repositories {
-		entry.Repository.forEachData(from, to, fn)
-	}
-}
-
 func (r *Repositories) Names() []domain.WebsiteName {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()

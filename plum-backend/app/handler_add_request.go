@@ -11,14 +11,16 @@ type AddRequest struct {
 }
 
 type AddRequestHandler struct {
-	repositories Repositories
-	classifier   *domain.TrafficClassifier
+	repositories       Repositories
+	maliciousAddresses MaliciousAddresses
+	classifier         *domain.TrafficClassifier
 }
 
-func NewAddRequestHandler(repositories Repositories, classifier *domain.TrafficClassifier) *AddRequestHandler {
+func NewAddRequestHandler(repositories Repositories, maliciousAddresses MaliciousAddresses, classifier *domain.TrafficClassifier) *AddRequestHandler {
 	return &AddRequestHandler{
-		repositories: repositories,
-		classifier:   classifier,
+		repositories:       repositories,
+		maliciousAddresses: maliciousAddresses,
+		classifier:         classifier,
 	}
 }
 
@@ -29,6 +31,8 @@ func (h *AddRequestHandler) Execute(cmd AddRequest) error {
 	}
 
 	category := h.classifier.Classify(cmd.Entry)
+
+	h.maliciousAddresses.Insert(cmd.Entry, category)
 
 	return repository.Insert(cmd.Entry, category)
 }
