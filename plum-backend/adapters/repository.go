@@ -112,9 +112,6 @@ func (r *Repository) RetrieveMonth(year int, month time.Month, filter domain.Fil
 	return target, true
 }
 
-// maliciousAddresses counts the malicious requests made within the window
-// surrounding the retrieved range as the addresses which are malicious there
-// affect the categories of the entries which are about to be returned.
 func (r *Repository) maliciousAddresses(from, to time.Time) *domain.MaliciousAddresses {
 	rv := domain.NewMaliciousAddresses()
 	r.repositories.ForEachData(from.Add(-domain.TrafficWindow), to.Add(domain.TrafficWindow), func(t time.Time, data *domain.Data) {
@@ -123,8 +120,6 @@ func (r *Repository) maliciousAddresses(from, to time.Time) *domain.MaliciousAdd
 	return rv
 }
 
-// forEachData calls the provided function for every hour of the stored data
-// which falls within the provided range.
 func (r *Repository) forEachData(from, to time.Time, fn func(t time.Time, data *domain.Data)) {
 	r.dataMutex.Lock()
 	defer r.dataMutex.Unlock()
@@ -136,7 +131,6 @@ func (r *Repository) forEachData(from, to time.Time, fn func(t time.Time, data *
 	}
 }
 
-// RemoveOldData discards the data which is older than the retention period.
 func (r *Repository) RemoveOldData(now time.Time) {
 	r.dataMutex.Lock()
 	defer r.dataMutex.Unlock()
