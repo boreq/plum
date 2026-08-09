@@ -106,6 +106,8 @@ var automatedUserAgentMarkers = []string{
 	"crawler",
 	"trawler",
 	"spider",
+	"scaner",
+	"scanner",
 }
 
 var browserProducts = map[string]struct{}{

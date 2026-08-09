@@ -457,6 +457,14 @@ func TestClassifyUserAgentName(t *testing.T) {
 			Category:  CategoryAutomated,
 		},
 		{
+			UserAgent: "Mozilla/5.0 (compatible; SomeScaner/1.0)",
+			Category:  CategoryAutomated,
+		},
+		{
+			UserAgent: "Mozilla/5.0 (compatible; SomeScanner/1.0)",
+			Category:  CategoryAutomated,
+		},
+		{
 			UserAgent: "OWLer",
 			Category:  CategoryAutomated,
 		},
