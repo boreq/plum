@@ -61,7 +61,7 @@ func TestNewRangeResultJSON(t *testing.T) {
 		t.Fatalf("marshal: %v", err)
 	}
 
-	expected := fmt.Sprintf(`{"summary":{"visits":1,"hits":2,"bytes":150,"categories":{"automated":{"visits":0,"hits":0,"bytes":0},"malicious":{"visits":0,"hits":0,"bytes":0},"possibly-automated":{"visits":0,"hits":0,"bytes":0},"unclassified":{"visits":1,"hits":2,"bytes":150}},"uris":{"/index.html":{"visits":1,"hits":1,"bytes":100},"/other.html":{"visits":1,"hits":1,"bytes":50}},"statuses":{"200":{"visits":1,"hits":1,"bytes":100},"404":{"visits":1,"hits":1,"bytes":50}},"referers":{"example.com":{"visits":1,"hits":2,"bytes":150}},"userAgents":{"User Agent":{"visits":1,"hits":2,"bytes":150,"browser":""}}},"series":[{"time":"%s","visits":1,"hits":1,"bytes":100,"statuses":{"2xx":1}},{"time":"%s","visits":1,"hits":1,"bytes":50,"statuses":{"4xx":1}}]}`,
+	expected := fmt.Sprintf(`{"summary":{"categories":{"automated":{"visits":0,"hits":0,"bytes":0},"malicious":{"visits":0,"hits":0,"bytes":0},"possibly-automated":{"visits":0,"hits":0,"bytes":0},"unclassified":{"visits":1,"hits":2,"bytes":150}},"uris":{"/index.html":{"visits":1,"hits":1,"bytes":100},"/other.html":{"visits":1,"hits":1,"bytes":50}},"statuses":{"200":{"visits":1,"hits":1,"bytes":100},"404":{"visits":1,"hits":1,"bytes":50}},"referers":{"example.com":{"visits":1,"hits":2,"bytes":150}},"userAgents":{"User Agent":{"visits":1,"hits":2,"bytes":150,"browser":""}}},"series":[{"time":"%s","visits":1,"hits":1,"bytes":100,"statuses":{"2xx":1}},{"time":"%s","visits":1,"hits":1,"bytes":50,"statuses":{"4xx":1}}]}`,
 		rangeEntryTime.Truncate(time.Hour).Format(time.RFC3339),
 		rangeEntryTime.Add(time.Hour).Truncate(time.Hour).Format(time.RFC3339))
 

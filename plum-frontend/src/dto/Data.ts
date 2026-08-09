@@ -12,7 +12,7 @@ export interface UserAgentMetrics extends Metrics {
     browser: string;
 }
 
-export interface Data extends Metrics {
+export interface Data {
     categories: Dictionary<Metrics>;
     uris: Dictionary<Metrics>;
     statuses: Dictionary<Metrics>;

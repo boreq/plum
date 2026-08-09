@@ -19,7 +19,6 @@ type SeriesPoint struct {
 }
 
 type Data struct {
-	Metrics
 	Categories map[string]Metrics          `json:"categories"`
 	Uris       map[string]Metrics          `json:"uris"`
 	Statuses   map[string]Metrics          `json:"statuses"`
@@ -80,7 +79,6 @@ func newSeriesPoint(seriesPoint app.SeriesPoint) SeriesPoint {
 
 func newData(summary *domain.Summary) Data {
 	return Data{
-		Metrics:    newMetrics(&summary.Metrics),
 		Categories: newCategoryMetricsMap(summary.Categories),
 		Uris:       newMetricsMap(summary.Uris),
 		Statuses:   newMetricsMap(summary.Statuses),
