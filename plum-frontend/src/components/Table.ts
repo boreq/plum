@@ -26,6 +26,10 @@ export default defineComponent({
             type: Boolean,
             default: false,
         },
+        expandable: {
+            type: Boolean,
+            default: true,
+        },
     },
 
     emits: ['click-row'],
@@ -35,6 +39,8 @@ export default defineComponent({
             page: 0,
             sortColumn: null as number,
             sortDirection: null as SortDirection,
+            expanded: false,
+            query: '',
         };
     },
 
@@ -68,6 +74,18 @@ export default defineComponent({
             return this.sortedRows.slice(start, start + this.perPage);
         },
 
+        matchingRows(): IndexedRow[] {
+            const query = this.query.trim().toLowerCase();
+            if (!query) {
+                return this.sortedRows;
+            }
+            return this.sortedRows.filter(entry => {
+                return entry.row.data.some((value, columnIndex) => {
+                    return this.formatValue(columnIndex, value).toLowerCase().includes(query);
+                });
+            });
+        },
+
         hasNextPage(): boolean {
             return this.page < this.lastPage;
         },
@@ -90,6 +108,15 @@ export default defineComponent({
                 this.page = this.lastPage;
             }
         },
+    },
+
+    mounted(): void {
+        window.addEventListener('keydown', this.keydown);
+    },
+
+    beforeUnmount(): void {
+        window.removeEventListener('keydown', this.keydown);
+        this.unlockScroll();
     },
 
     methods: {
@@ -148,8 +175,7 @@ export default defineComponent({
             return styles.join(';');
         },
 
-        getBackgroundStyle(rowIndex: number): string {
-            const row = this.limitedRows[rowIndex].row;
+        getBackgroundStyle(row: TableRow): string {
             if (row.fraction) {
                 const percentage = Math.round(row.fraction * 100);
                 return `width: ${percentage}%;`;
@@ -169,8 +195,44 @@ export default defineComponent({
             }
         },
 
-        click(rowIndex: number): void {
-            this.$emit('click-row', this.limitedRows[rowIndex].index);
+        click(index: number): void {
+            this.$emit('click-row', index);
+        },
+
+        clickExpanded(index: number): void {
+            this.$emit('click-row', index);
+            this.collapse();
+        },
+
+        expand(): void {
+            this.expanded = true;
+            this.query = '';
+            this.lockScroll();
+            this.$nextTick(() => {
+                const search = this.$refs.search as HTMLInputElement;
+                if (search) {
+                    search.focus();
+                }
+            });
+        },
+
+        collapse(): void {
+            this.expanded = false;
+            this.unlockScroll();
+        },
+
+        keydown(event: KeyboardEvent): void {
+            if (event.key === 'Escape' && this.expanded) {
+                this.collapse();
+            }
+        },
+
+        lockScroll(): void {
+            document.body.style.overflow = 'hidden';
+        },
+
+        unlockScroll(): void {
+            document.body.style.overflow = '';
         },
     },
 });

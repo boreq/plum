@@ -87,18 +87,144 @@
 
     .navigation {
         display: flex;
-        padding: 1em 0 0;
+        padding: .5em 0 0;
 
         .center {
             flex: 1;
         }
 
-        .inactive {
-            color: #ddd;
+        a {
+            display: inline-block;
+            padding: .4em .65em;
+            cursor: pointer;
+            color: $box-normal-text-dimmed-color;
+
+            &:hover {
+                color: $box-normal-text-color;
+            }
+
+            &.inactive {
+                cursor: default;
+                color: $box-normal-text-disabled-color;
+
+                &:hover {
+                    color: $box-normal-text-disabled-color;
+                }
+            }
+        }
+    }
+
+    &.large {
+        .th, .no-data {
+            font-size: 14px;
         }
 
-        a {
-            cursor: pointer;
+        .tr {
+            font-size: 20px;
+
+            .td {
+                padding: 12px 10px;
+
+                .icon {
+                    font-size: 20px;
+                }
+            }
         }
+    }
+}
+
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: rgba(0, 0, 0, .35);
+    z-index: 1000;
+
+    .sidebar {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 40%;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        background: $box-normal-background-color;
+        box-shadow: -2px 0 16px rgba(0, 0, 0, .2);
+        padding: 1.5em;
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            padding-bottom: 1em;
+
+            .sidebar-close {
+                cursor: pointer;
+                display: inline-block;
+                margin-left: 1em;
+                padding: .25em .5em;
+                color: $box-normal-text-dimmed-color;
+                font-size: 18px;
+
+                &:hover {
+                    color: $box-normal-text-color;
+                }
+            }
+        }
+
+        .sidebar-search {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            color: $box-normal-text-dimmed-color;
+
+            input {
+                flex: 1;
+                margin-left: .75em;
+                padding: .5em 0;
+                border: none;
+                border-bottom: 1px solid $box-dimmed-background-color;
+                background: transparent;
+                outline: none;
+                color: $box-normal-text-color;
+                font-family: inherit;
+                font-size: 16px;
+
+                &:focus {
+                    border-bottom-color: $primary-color;
+                }
+            }
+        }
+
+        .sidebar-body {
+            flex: 1;
+            overflow-y: auto;
+            scrollbar-gutter: stable;
+            padding-right: .75em;
+        }
+    }
+}
+
+.sidebar-enter-active, .sidebar-leave-active {
+    transition: opacity .2s ease;
+
+    .sidebar {
+        transition: transform .2s ease;
+    }
+}
+
+.sidebar-enter-from, .sidebar-leave-to {
+    opacity: 0;
+
+    .sidebar {
+        transform: translateX(100%);
+    }
+}
+
+@media (max-width: $media-threshold-1) {
+    .sidebar-overlay .sidebar {
+        width: 100%;
     }
 }
