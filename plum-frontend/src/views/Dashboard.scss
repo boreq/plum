@@ -69,6 +69,17 @@ $spacing: 10px;
         grid-area: status-codes;
     }
 
+    .pages, .referers, .user-agents, .bytes-sent, .status-codes {
+        display: flex;
+        flex-direction: column;
+
+        >div {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+    }
+
     .box.box-inversed {
         padding: 0;
         background-color: $box-inversed-background-color;
