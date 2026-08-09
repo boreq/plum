@@ -31,11 +31,13 @@ export default defineComponent({
                         label: 'Resource',
                         width: null,
                         align: Align.Left,
+                        sortable: false,
                     },
                     {
                         label: 'Bytes sent',
                         width: '100px',
                         align: Align.Right,
+                        format: v => textService.humanizeBytes(v as number),
                     },
                 ],
             };
@@ -52,7 +54,7 @@ export default defineComponent({
                 return {
                     data: [
                         v.name,
-                        textService.humanizeBytes(v.bytes),
+                        v.bytes,
                     ],
                     fraction: total ? v.bytes / total : 0,
                 };

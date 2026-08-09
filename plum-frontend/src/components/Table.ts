@@ -1,5 +1,10 @@
 import { defineComponent, type PropType } from 'vue';
-import type { TableHeader, TableRow } from '@/dto/Table';
+import { SortDirection, type TableHeader, type TableRow, type TableValue } from '@/dto/Table';
+
+interface IndexedRow {
+    row: TableRow;
+    index: number;
+}
 
 export default defineComponent({
     name: 'Table',
@@ -28,6 +33,8 @@ export default defineComponent({
     data() {
         return {
             page: 0,
+            sortColumn: null as number,
+            sortDirection: null as SortDirection,
         };
     },
 
@@ -36,9 +43,29 @@ export default defineComponent({
             return this.rows && this.rows.length > 0;
         },
 
-        limitedRows(): TableRow[] {
+        indexedRows(): IndexedRow[] {
+            return this.rows.map((row, index) => ({ row, index }));
+        },
+
+        sortedRows(): IndexedRow[] {
+            if (this.sortColumn === null || this.sortDirection === null) {
+                return this.indexedRows;
+            }
+
+            const direction = this.sortDirection === SortDirection.Ascending ? 1 : -1;
+
+            return Array.from(this.indexedRows).sort((a, b) => {
+                const result = this.compare(
+                    a.row.data[this.sortColumn],
+                    b.row.data[this.sortColumn],
+                );
+                return result === 0 ? a.index - b.index : result * direction;
+            });
+        },
+
+        limitedRows(): IndexedRow[] {
             const start = this.page * this.perPage;
-            return this.rows.slice(start, start + this.perPage);
+            return this.sortedRows.slice(start, start + this.perPage);
         },
 
         hasNextPage(): boolean {
@@ -66,6 +93,44 @@ export default defineComponent({
     },
 
     methods: {
+        compare(a: TableValue, b: TableValue): number {
+            if (typeof a === 'number' && typeof b === 'number') {
+                return a - b;
+            }
+            return String(a).localeCompare(String(b), undefined, { numeric: true });
+        },
+
+        formatValue(columnIndex: number, value: TableValue): string {
+            const column = this.header.columns[columnIndex];
+            return column.format ? column.format(value) : String(value);
+        },
+
+        isSortable(columnIndex: number): boolean {
+            return this.header.columns[columnIndex].sortable !== false;
+        },
+
+        toggleSort(columnIndex: number): void {
+            if (!this.isSortable(columnIndex)) {
+                return;
+            }
+
+            if (this.sortColumn !== columnIndex) {
+                this.sortColumn = columnIndex;
+                this.sortDirection = SortDirection.Descending;
+            } else if (this.sortDirection === SortDirection.Descending) {
+                this.sortDirection = SortDirection.Ascending;
+            } else {
+                this.sortColumn = null;
+                this.sortDirection = null;
+            }
+
+            this.page = 0;
+        },
+
+        sortIconClass(): string {
+            return this.sortDirection === SortDirection.Ascending ? 'fas fa-sort-up' : 'fas fa-sort-down';
+        },
+
         getColumnStyle(columnIndex: number): string {
             const column = this.header.columns[columnIndex];
             const styles: string[] = [];
@@ -84,7 +149,7 @@ export default defineComponent({
         },
 
         getBackgroundStyle(rowIndex: number): string {
-            const row = this.limitedRows[rowIndex];
+            const row = this.limitedRows[rowIndex].row;
             if (row.fraction) {
                 const percentage = Math.round(row.fraction * 100);
                 return `width: ${percentage}%;`;
@@ -105,8 +170,7 @@ export default defineComponent({
         },
 
         click(rowIndex: number): void {
-            const index = this.perPage * this.page + rowIndex;
-            this.$emit('click-row', index);
+            this.$emit('click-row', this.limitedRows[rowIndex].index);
         },
     },
 });

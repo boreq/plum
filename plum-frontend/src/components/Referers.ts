@@ -31,16 +31,19 @@ export default defineComponent({
                         label: 'Referer',
                         width: null,
                         align: Align.Left,
+                        sortable: false,
                     },
                     {
                         label: 'Hits',
                         width: '60px',
                         align: Align.Right,
+                        format: v => textService.humanizeNumber(v as number),
                     },
                     {
                         label: 'Visits',
                         width: '60px',
                         align: Align.Right,
+                        format: v => textService.humanizeNumber(v as number),
                     },
                 ],
             };
@@ -57,8 +60,8 @@ export default defineComponent({
                 return {
                     data: [
                         v.name,
-                        textService.humanizeNumber(v.hits),
-                        textService.humanizeNumber(v.visits),
+                        v.hits,
+                        v.visits,
                     ],
                     fraction: total ? v.visits / total : 0,
                 };

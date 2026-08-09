@@ -1,17 +1,19 @@
 <template>
     <div class="table">
         <div class="thead" v-if="header">
-            <div class="th" v-for="(column, index) in header.columns" :key="index" :style="getColumnStyle(index)">
-                {{ column.label }}
+            <div class="th" v-for="(column, index) in header.columns" :key="index" :style="getColumnStyle(index)"
+                 v-bind:class="{sortable: isSortable(index), sorted: sortColumn === index}"
+                 v-on:click="toggleSort(index)">
+                {{ column.label }}<i v-if="sortColumn === index" class="sort-icon" :class="sortIconClass()"></i>
             </div>
         </div>
         <div v-if="!dataPresent" class="no-data">
             no data
         </div>
         <div class="tbody" v-if="dataPresent">
-            <div class="tr" v-for="(row, rowIndex) in limitedRows" :key="rowIndex" v-on:click="click(rowIndex)" v-bind:class="{clickable: clickable}">
-                <div class="td" v-for="(value, columnIndex) in row.data" :key="columnIndex" :style="getColumnStyle(columnIndex)" :title="value">
-                    {{ value }}<i v-if="columnIndex === 0 && row.icon" class="icon" :class="row.icon" :title="row.iconTitle"></i>
+            <div class="tr" v-for="(entry, rowIndex) in limitedRows" :key="entry.index" v-on:click="click(rowIndex)" v-bind:class="{clickable: clickable}">
+                <div class="td" v-for="(value, columnIndex) in entry.row.data" :key="columnIndex" :style="getColumnStyle(columnIndex)" :title="formatValue(columnIndex, value)">
+                    {{ formatValue(columnIndex, value) }}<i v-if="columnIndex === 0 && entry.row.icon" class="icon" :class="entry.row.icon" :title="entry.row.iconTitle"></i>
                 </div>
                 <div class="background" :style="getBackgroundStyle(rowIndex)"></div>
             </div>

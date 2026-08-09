@@ -19,6 +19,25 @@
 
     .th {
         color: $box-normal-text-dimmed-color;
+        white-space: nowrap;
+        padding: 0 .75em;
+
+        .sort-icon {
+            margin-left: .5em;
+        }
+
+        &.sortable {
+            cursor: pointer;
+            user-select: none;
+
+            &:hover {
+                color: $box-normal-text-color;
+            }
+        }
+
+        &.sorted {
+            color: $box-normal-text-color;
+        }
     }
 
     .no-data {

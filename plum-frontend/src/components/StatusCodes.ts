@@ -31,11 +31,14 @@ export default defineComponent({
                         label: 'Status',
                         width: null,
                         align: Align.Left,
+                        sortable: false,
+                        format: v => textService.getHttpStatusText(v as string),
                     },
                     {
                         label: 'Hits',
                         width: '100px',
                         align: Align.Right,
+                        format: v => textService.humanizeNumber(v as number),
                     },
                 ],
             };
@@ -51,8 +54,8 @@ export default defineComponent({
             return this.statusCodes.map(v => {
                 return {
                     data: [
-                        textService.getHttpStatusText(v.name),
-                        textService.humanizeNumber(v.hits),
+                        v.name,
+                        v.hits,
                     ],
                     fraction: total ? v.hits / total : 0,
                 };
