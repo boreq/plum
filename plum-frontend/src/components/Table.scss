@@ -29,6 +29,10 @@
         white-space: nowrap;
         padding: 0 .75em;
 
+        &:first-child {
+            padding-left: 0;
+        }
+
         .sort-icon {
             margin-left: .5em;
         }
