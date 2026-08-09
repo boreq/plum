@@ -1,7 +1,7 @@
 import { defineComponent, type PropType } from 'vue';
 import { SortDirection, type TableHeader, type TableRow, type TableValue } from '@/dto/Table';
 
-interface IndexedRow {
+export interface IndexedRow {
     row: TableRow;
     index: number;
 }

@@ -223,7 +223,19 @@
     }
 }
 
+@media (max-width: $media-threshold-2) {
+    .sidebar-overlay .sidebar {
+        width: 60%;
+    }
+}
+
 @media (max-width: $media-threshold-1) {
+    .sidebar-overlay .sidebar {
+        width: 80%;
+    }
+}
+
+@media (max-width: $media-threshold-3) {
     .sidebar-overlay .sidebar {
         width: 100%;
     }
