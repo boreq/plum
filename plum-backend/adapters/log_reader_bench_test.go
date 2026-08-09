@@ -19,7 +19,8 @@ const benchmarkLines = 500000
 
 type insertingHandler struct {
 	parser     *parser.Parser
-	repository *domain.Repository
+	repository *adapters.Repository
+	classifier *domain.TrafficClassifier
 }
 
 func (h insertingHandler) Handle(line string) error {
@@ -27,7 +28,7 @@ func (h insertingHandler) Handle(line string) error {
 	if err != nil {
 		return err
 	}
-	return h.repository.Insert(entry)
+	return h.repository.Insert(entry, h.classifier.Classify(entry))
 }
 
 func BenchmarkLoadOldEntries(b *testing.B) {
@@ -51,7 +52,8 @@ func benchmarkLoad(b *testing.B, fromEnd bool) {
 	for i := 0; i < b.N; i++ {
 		handler := insertingHandler{
 			parser:     p,
-			repository: domain.NewRepository(config.Website{}),
+			repository: adapters.NewRepository(config.Website{}, adapters.NewRepositories()),
+			classifier: domain.NewTrafficClassifier(),
 		}
 
 		if err := adapters.NewLogReader().Load([]string{path}, handler); err != nil {

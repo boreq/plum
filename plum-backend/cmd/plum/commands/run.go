@@ -61,7 +61,7 @@ func runRun(c guinea.Context) error {
 			return err
 		}
 
-		if err := repositories.Add(websiteName, domain.NewRepository(website)); err != nil {
+		if err := repositories.Add(websiteName, adapters.NewRepository(website, repositories)); err != nil {
 			return errors.Wrap(err, "could not add a repository")
 		}
 

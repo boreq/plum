@@ -13,7 +13,7 @@ import (
 
 const (
 	MaliciousRequestThreshold = 5
-	trafficWindow             = 30 * 24 * time.Hour
+	TrafficWindow             = 30 * 24 * time.Hour
 
 	bucketKeyFormat   = "2006-01-02"
 	maxUnescapePasses = 5
@@ -242,7 +242,7 @@ var injectionMarkers = []string{
 	">",
 }
 
-var maliciousRules = []func(r request) bool{
+var maliciousRules = []func(r requestURI) bool{
 	requestsMaliciousUri,
 	requestsMaliciousDirectory,
 	requestsMaliciousFile,
@@ -270,93 +270,24 @@ func NewTrafficClassifier() *TrafficClassifier {
 	}
 }
 
-// Classify returns the category which can be determined by looking at a single
-// entry. The category of the traffic coming from the addresses which turn out
-// to be malicious is corrected by MaliciousAddresses when the data is
-// retrieved.
 func (c *TrafficClassifier) Classify(entry *parser.Entry) Category {
-	category := classifyUserAgent(entry.UserAgent, entry.Time)
+	category := c.classifyUserAgent(entry.UserAgent, entry.Time)
 
-	if isScanRequest(entry.HttpRequestURI) {
+	if c.isScanRequest(entry.HttpRequestURI) {
 		category = CategoryMalicious
 	}
 
 	return category
 }
 
-// MaliciousAddresses counts the malicious requests made by every address. It is
-// built out of the stored data before it is retrieved and discarded afterwards.
-type MaliciousAddresses struct {
-	ips     map[string]map[string]int
-	results map[resultKey]bool
-}
-
-type resultKey struct {
-	remoteAddress string
-	bucket        string
-}
-
-func NewMaliciousAddresses() *MaliciousAddresses {
-	return &MaliciousAddresses{
-		ips:     make(map[string]map[string]int),
-		results: make(map[resultKey]bool),
-	}
-}
-
-func (m *MaliciousAddresses) Insert(data *Data, t time.Time) {
-	categoryData, ok := data.Categories[CategoryMalicious]
-	if !ok {
-		return
-	}
-
-	key := bucketKey(t)
-
-	for remoteAddress, remoteAddressData := range categoryData.RemoteAddresses {
-		buckets, ok := m.ips[remoteAddress]
-		if !ok {
-			buckets = make(map[string]int)
-			m.ips[remoteAddress] = buckets
-		}
-
-		buckets[key] += remoteAddressData.Hits
-	}
-}
-
-// IsMalicious reports whether the address made enough malicious requests around
-// the provided point in time. The window extends both backwards and forwards so
-// that the traffic which precedes the malicious requests is recognized as well.
-func (m *MaliciousAddresses) IsMalicious(remoteAddress string, t time.Time) bool {
-	key := resultKey{remoteAddress: remoteAddress, bucket: bucketKey(t)}
-
-	if rv, ok := m.results[key]; ok {
-		return rv
-	}
-
-	rv := m.maliciousRequests(remoteAddress, t) > MaliciousRequestThreshold
-	m.results[key] = rv
-	return rv
-}
-
-func (m *MaliciousAddresses) maliciousRequests(remoteAddress string, t time.Time) int {
-	var malicious int
-
-	for key, counter := range m.ips[remoteAddress] {
-		if bucketWithinWindow(key, t) {
-			malicious += counter
-		}
-	}
-
-	return malicious
-}
-
-func classifyUserAgent(rawUserAgent string, t time.Time) Category {
+func (c *TrafficClassifier) classifyUserAgent(rawUserAgent string, t time.Time) Category {
 	raw := strings.ToLower(rawUserAgent)
 
-	if isMissingUserAgent(raw) {
+	if c.isMissingUserAgent(raw) {
 		return CategoryMalicious
 	}
 
-	products := userAgentProducts(raw)
+	products := c.userAgentProducts(raw)
 
 	for _, product := range products {
 		if _, ok := maliciousUserAgentNames[product]; ok {
@@ -376,7 +307,7 @@ func classifyUserAgent(rawUserAgent string, t time.Time) Category {
 		}
 	}
 
-	if pretendsToBeBrowser(raw) && !containsBrowserProduct(products) {
+	if c.pretendsToBeBrowser(raw) && !c.containsBrowserProduct(products) {
 		return CategoryPossiblyAutomated
 	}
 
@@ -384,27 +315,27 @@ func classifyUserAgent(rawUserAgent string, t time.Time) Category {
 		return CategoryPossiblyAutomated
 	}
 
-	if isAllLowercaseUserAgent(rawUserAgent) {
+	if c.isAllLowercaseUserAgent(rawUserAgent) {
 		return CategoryPossiblyAutomated
 	}
 
-	if isQuotedUserAgent(rawUserAgent) {
+	if c.isQuotedUserAgent(rawUserAgent) {
 		return CategoryPossiblyAutomated
 	}
 
 	return CategoryUnclassified
 }
 
-func isMissingUserAgent(raw string) bool {
+func (c *TrafficClassifier) isMissingUserAgent(raw string) bool {
 	raw = strings.TrimSpace(raw)
 	return raw == "" || raw == "-"
 }
 
-func isAllLowercaseUserAgent(rawUserAgent string) bool {
+func (c *TrafficClassifier) isAllLowercaseUserAgent(rawUserAgent string) bool {
 	return rawUserAgent == strings.ToLower(rawUserAgent)
 }
 
-func isQuotedUserAgent(rawUserAgent string) bool {
+func (c *TrafficClassifier) isQuotedUserAgent(rawUserAgent string) bool {
 	for _, q := range []string{`"`, `'`, `\x22`, `\x27`} {
 		if strings.HasPrefix(rawUserAgent, q) || strings.HasSuffix(rawUserAgent, q) {
 			return true
@@ -413,12 +344,12 @@ func isQuotedUserAgent(rawUserAgent string) bool {
 	return false
 }
 
-func userAgentProducts(raw string) []string {
+func (c *TrafficClassifier) userAgentProducts(raw string) []string {
 	var rv []string
 	seen := make(map[string]struct{})
 
 	add := func(s string) {
-		product := userAgentProduct(s)
+		product := c.userAgentProduct(s)
 		if product == "" {
 			return
 		}
@@ -429,7 +360,7 @@ func userAgentProducts(raw string) []string {
 		rv = append(rv, product)
 	}
 
-	for _, segment := range userAgentSegments(raw) {
+	for _, segment := range c.userAgentSegments(raw) {
 		add(segment)
 
 		for _, field := range strings.Fields(segment) {
@@ -440,22 +371,22 @@ func userAgentProducts(raw string) []string {
 	return rv
 }
 
-func userAgentSegments(raw string) []string {
+func (c *TrafficClassifier) userAgentSegments(raw string) []string {
 	return strings.FieldsFunc(raw, func(r rune) bool {
 		return r == '(' || r == ')' || r == ';' || r == ','
 	})
 }
 
-func userAgentProduct(s string) string {
+func (c *TrafficClassifier) userAgentProduct(s string) string {
 	name, _, _ := strings.Cut(s, "/")
 	return strings.Trim(name, " +")
 }
 
-func pretendsToBeBrowser(raw string) bool {
+func (c *TrafficClassifier) pretendsToBeBrowser(raw string) bool {
 	return strings.HasPrefix(raw, "mozilla/")
 }
 
-func containsBrowserProduct(products []string) bool {
+func (c *TrafficClassifier) containsBrowserProduct(products []string) bool {
 	for _, product := range products {
 		if _, ok := browserProducts[product]; ok {
 			return true
@@ -485,7 +416,7 @@ func unescapeUri(uri string) string {
 	return uri
 }
 
-type request struct {
+type requestURI struct {
 	RawUri   string
 	Uri      string
 	Path     string
@@ -494,7 +425,7 @@ type request struct {
 	FileName string
 }
 
-func newRequest(rawUri string) request {
+func newRequestURI(rawUri string) requestURI {
 	uri := unescapeUri(rawUri)
 	path, query, _ := strings.Cut(uri, "?")
 
@@ -510,7 +441,7 @@ func newRequest(rawUri string) request {
 		fileName = segments[len(segments)-1]
 	}
 
-	return request{
+	return requestURI{
 		RawUri:   rawUri,
 		Uri:      uri,
 		Path:     path,
@@ -520,8 +451,8 @@ func newRequest(rawUri string) request {
 	}
 }
 
-func isScanRequest(uri string) bool {
-	r := newRequest(uri)
+func (c *TrafficClassifier) isScanRequest(uri string) bool {
+	r := newRequestURI(uri)
 
 	for _, rule := range maliciousRules {
 		if rule(r) {
@@ -532,12 +463,12 @@ func isScanRequest(uri string) bool {
 	return false
 }
 
-func requestsMaliciousUri(r request) bool {
+func requestsMaliciousUri(r requestURI) bool {
 	_, ok := maliciousUris[r.Uri]
 	return ok
 }
 
-func attemptsPathTraversal(r request) bool {
+func attemptsPathTraversal(r requestURI) bool {
 	if strings.HasPrefix(r.Uri, "//") {
 		return true
 	}
@@ -551,7 +482,7 @@ func attemptsPathTraversal(r request) bool {
 	return false
 }
 
-func requestsHiddenFile(r request) bool {
+func requestsHiddenFile(r requestURI) bool {
 	for _, segment := range r.Segments {
 		if !strings.HasPrefix(segment, ".") {
 			continue
@@ -567,7 +498,7 @@ func requestsHiddenFile(r request) bool {
 	return false
 }
 
-func requestsMaliciousDirectory(r request) bool {
+func requestsMaliciousDirectory(r requestURI) bool {
 	for _, segment := range r.Segments {
 		for _, directory := range maliciousDirectories {
 			if segment == directory {
@@ -579,7 +510,7 @@ func requestsMaliciousDirectory(r request) bool {
 	return false
 }
 
-func requestsNumberedPhpScript(r request) bool {
+func requestsNumberedPhpScript(r requestURI) bool {
 	name, extension, found := strings.Cut(r.FileName, ".")
 	if !found || extension != "php" || name == "" {
 		return false
@@ -594,7 +525,7 @@ func requestsNumberedPhpScript(r request) bool {
 	return true
 }
 
-func requestsMaliciousFile(r request) bool {
+func requestsMaliciousFile(r requestURI) bool {
 	if _, ok := maliciousFileNames[r.FileName]; ok {
 		return true
 	}
@@ -608,7 +539,7 @@ func requestsMaliciousFile(r request) bool {
 	return false
 }
 
-func requestsPunctuationPrefixedSegment(r request) bool {
+func requestsPunctuationPrefixedSegment(r requestURI) bool {
 	for _, segment := range r.Segments {
 		c := rune(segment[0])
 
@@ -626,7 +557,7 @@ func requestsPunctuationPrefixedSegment(r request) bool {
 	return false
 }
 
-func obfuscatesPath(r request) bool {
+func obfuscatesPath(r requestURI) bool {
 	uri := strings.ToLower(r.RawUri)
 
 	for i := 0; i < maxUnescapePasses; i++ {
@@ -671,7 +602,7 @@ func encodesAlphanumericCharacters(path string) bool {
 	return false
 }
 
-func attemptsInjection(r request) bool {
+func attemptsInjection(r requestURI) bool {
 	for _, marker := range injectionMarkers {
 		if strings.Contains(r.Uri, marker) {
 			return true
@@ -679,20 +610,4 @@ func attemptsInjection(r request) bool {
 	}
 
 	return false
-}
-
-func bucketKey(t time.Time) string {
-	return t.UTC().Format(bucketKeyFormat)
-}
-
-func bucketWithinWindow(key string, t time.Time) bool {
-	bucket, err := parseBucketKey(key)
-	if err != nil {
-		return false
-	}
-	return !bucket.Before(t.UTC().Add(-trafficWindow)) && !bucket.After(t.UTC().Add(trafficWindow))
-}
-
-func parseBucketKey(key string) (time.Time, error) {
-	return time.ParseInLocation(bucketKeyFormat, key, time.UTC)
 }

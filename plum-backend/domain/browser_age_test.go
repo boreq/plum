@@ -232,7 +232,7 @@ func TestClassifyDetectsOutdatedBrowsers(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(t *testing.T) {
-			if category := classifyUserAgent(testCase.UserAgent, classifyReferenceTime); category != testCase.Category {
+			if category := NewTrafficClassifier().classifyUserAgent(testCase.UserAgent, classifyReferenceTime); category != testCase.Category {
 				t.Errorf("got %q, want %q", category, testCase.Category)
 			}
 		})

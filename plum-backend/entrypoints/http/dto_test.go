@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boreq/plum/plum-backend/adapters"
 	"github.com/boreq/plum/plum-backend/app"
 	"github.com/boreq/plum/plum-backend/config"
 	"github.com/boreq/plum/plum-backend/domain"
@@ -15,7 +16,17 @@ import (
 var rangeEntryTime = time.Now().UTC().Truncate(24 * time.Hour).Add(-12 * time.Hour)
 
 func TestNewRangeResultJSON(t *testing.T) {
-	repository := domain.NewRepository(config.Website{})
+	repositories := adapters.NewRepositories()
+
+	websiteName, err := domain.NewWebsiteName("website")
+	if err != nil {
+		t.Fatalf("website name: %v", err)
+	}
+
+	repository := adapters.NewRepository(config.Website{}, repositories)
+	if err := repositories.Add(websiteName, repository); err != nil {
+		t.Fatalf("add: %v", err)
+	}
 
 	entries := []*parser.Entry{
 		{
@@ -38,8 +49,10 @@ func TestNewRangeResultJSON(t *testing.T) {
 		},
 	}
 
+	classifier := domain.NewTrafficClassifier()
+
 	for _, entry := range entries {
-		if err := repository.Insert(entry); err != nil {
+		if err := repository.Insert(entry, classifier.Classify(entry)); err != nil {
 			t.Fatalf("insert: %v", err)
 		}
 	}

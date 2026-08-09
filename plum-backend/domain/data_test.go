@@ -7,28 +7,28 @@ import (
 )
 
 func TestCreateVisitHash(t *testing.T) {
-	h := createVisitHash("2020-01-01", "1.2.3.4", "user agent")
+	h := CreateVisitHash("2020-01-01", "1.2.3.4", "user agent")
 	if len(h) != retainHashBytes {
 		t.Fatalf("length was %d", len(h))
 	}
 }
 
 func TestCreateVisitHashDependsOnPrefixAddressAndUserAgent(t *testing.T) {
-	base := createVisitHash("2020-01-01", "1.2.3.4", "user agent")
+	base := CreateVisitHash("2020-01-01", "1.2.3.4", "user agent")
 
-	if base != createVisitHash("2020-01-01", "1.2.3.4", "user agent") {
+	if base != CreateVisitHash("2020-01-01", "1.2.3.4", "user agent") {
 		t.Fatal("the visit hash must be stable")
 	}
 
-	if base == createVisitHash("2020-01-02", "1.2.3.4", "user agent") {
+	if base == CreateVisitHash("2020-01-02", "1.2.3.4", "user agent") {
 		t.Fatal("the visit prefix must affect the visit hash")
 	}
 
-	if base == createVisitHash("2020-01-01", "5.6.7.8", "user agent") {
+	if base == CreateVisitHash("2020-01-01", "5.6.7.8", "user agent") {
 		t.Fatal("the remote address must affect the visit hash")
 	}
 
-	if base == createVisitHash("2020-01-01", "1.2.3.4", "other agent") {
+	if base == CreateVisitHash("2020-01-01", "1.2.3.4", "other agent") {
 		t.Fatal("the user agent must affect the visit hash")
 	}
 }

@@ -134,7 +134,7 @@ var visitHash = crypto.SHA512_256
 
 const retainHashBytes = 8
 
-func createVisitHash(visitPrefix, remoteAddress, userAgent string) string {
+func CreateVisitHash(visitPrefix, remoteAddress, userAgent string) string {
 	h := visitHash.New()
 	h.Write([]byte(visitPrefix))
 	h.Write([]byte(remoteAddress))

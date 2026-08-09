@@ -286,7 +286,7 @@ func TestIsScanRequest(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Uri, func(t *testing.T) {
-			if scan := isScanRequest(testCase.Uri); scan != testCase.Scan {
+			if scan := NewTrafficClassifier().isScanRequest(testCase.Uri); scan != testCase.Scan {
 				t.Errorf("got %v, want %v", scan, testCase.Scan)
 			}
 		})
@@ -294,21 +294,6 @@ func TestIsScanRequest(t *testing.T) {
 }
 
 const classifierBrowserUserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36"
-
-func scannedData(t *testing.T, remoteAddress string, requests int) *Data {
-	data := NewData()
-	for i := 0; i < requests; i++ {
-		if err := data.Insert(&parser.Entry{
-			RemoteAddress:  remoteAddress,
-			UserAgent:      classifierBrowserUserAgent,
-			HttpRequestURI: "/.env",
-			Status:         "404",
-		}, CategoryMalicious); err != nil {
-			t.Fatal(err)
-		}
-	}
-	return data
-}
 
 func TestClassifyDoesNotMarkMaliciousAddresses(t *testing.T) {
 	c := NewTrafficClassifier()
@@ -320,100 +305,6 @@ func TestClassifyDoesNotMarkMaliciousAddresses(t *testing.T) {
 
 	if category := c.Classify(classifierEntry("1.1.1.1", classifierBrowserUserAgent, "/", now)); category != CategoryUnclassified {
 		t.Errorf("got %q, want %q", category, CategoryUnclassified)
-	}
-}
-
-func TestIsMaliciousMarksAddresses(t *testing.T) {
-	now := time.Now().UTC()
-
-	m := NewMaliciousAddresses()
-	m.Insert(scannedData(t, "1.1.1.1", MaliciousRequestThreshold+1), now)
-
-	if !m.IsMalicious("1.1.1.1", now) {
-		t.Error("the address should be malicious")
-	}
-
-	if m.IsMalicious("2.2.2.2", now) {
-		t.Error("the address should not be malicious")
-	}
-}
-
-func TestIsMaliciousIgnoresOtherCategories(t *testing.T) {
-	now := time.Now().UTC()
-
-	data := NewData()
-	for i := 0; i <= MaliciousRequestThreshold; i++ {
-		if err := data.Insert(&parser.Entry{
-			RemoteAddress:  "1.1.1.1",
-			UserAgent:      classifierBrowserUserAgent,
-			HttpRequestURI: "/",
-			Status:         "200",
-		}, CategoryUnclassified); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	m := NewMaliciousAddresses()
-	m.Insert(data, now)
-
-	if m.IsMalicious("1.1.1.1", now) {
-		t.Error("the address should not be malicious")
-	}
-}
-
-func TestIsMaliciousLooksBothWays(t *testing.T) {
-	now := time.Now().UTC()
-
-	m := NewMaliciousAddresses()
-	m.Insert(scannedData(t, "1.1.1.1", MaliciousRequestThreshold+1), now)
-
-	before := now.Add(-trafficWindow).Add(24 * time.Hour)
-	if !m.IsMalicious("1.1.1.1", before) {
-		t.Error("the traffic which precedes the malicious requests should be malicious")
-	}
-
-	after := now.Add(trafficWindow).Add(-24 * time.Hour)
-	if !m.IsMalicious("1.1.1.1", after) {
-		t.Error("the traffic which follows the malicious requests should be malicious")
-	}
-}
-
-func TestIsMaliciousIgnoresRequestsOutsideOfTheWindow(t *testing.T) {
-	now := time.Now().UTC()
-
-	m := NewMaliciousAddresses()
-	m.Insert(scannedData(t, "1.1.1.1", MaliciousRequestThreshold+1), now)
-
-	if m.IsMalicious("1.1.1.1", now.Add(-trafficWindow).Add(-24*time.Hour)) {
-		t.Error("the address should not be malicious before the window")
-	}
-
-	if m.IsMalicious("1.1.1.1", now.Add(trafficWindow).Add(24*time.Hour)) {
-		t.Error("the address should not be malicious after the window")
-	}
-}
-
-func TestIsMaliciousRequiresTheThreshold(t *testing.T) {
-	now := time.Now().UTC()
-
-	m := NewMaliciousAddresses()
-	m.Insert(scannedData(t, "1.1.1.1", MaliciousRequestThreshold), now)
-
-	if m.IsMalicious("1.1.1.1", now) {
-		t.Error("the address should not be malicious")
-	}
-}
-
-func TestIsMaliciousSumsBuckets(t *testing.T) {
-	now := time.Now().UTC()
-
-	m := NewMaliciousAddresses()
-	for i := 0; i <= MaliciousRequestThreshold; i++ {
-		m.Insert(scannedData(t, "1.1.1.1", 1), now.Add(-time.Duration(i)*24*time.Hour))
-	}
-
-	if !m.IsMalicious("1.1.1.1", now) {
-		t.Error("the address should be malicious")
 	}
 }
 
@@ -805,7 +696,7 @@ func TestClassifyUserAgentName(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.UserAgent, func(t *testing.T) {
-			if category := classifyUserAgent(testCase.UserAgent, classifyReferenceTime); category != testCase.Category {
+			if category := NewTrafficClassifier().classifyUserAgent(testCase.UserAgent, classifyReferenceTime); category != testCase.Category {
 				t.Errorf("got %q, want %q", category, testCase.Category)
 			}
 		})
@@ -929,7 +820,7 @@ func TestUserAgentProducts(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(t *testing.T) {
-			products := userAgentProducts(testCase.UserAgent)
+			products := NewTrafficClassifier().userAgentProducts(testCase.UserAgent)
 
 			if len(products) != len(testCase.Products) {
 				t.Fatalf("got %q, want %q", products, testCase.Products)

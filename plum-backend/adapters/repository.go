@@ -1,4 +1,4 @@
-package domain
+package adapters
 
 import (
 	"net/url"
@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/boreq/plum/plum-backend/config"
+	"github.com/boreq/plum/plum-backend/domain"
 	"github.com/boreq/plum/plum-backend/domain/parser"
 	"github.com/boreq/plum/plum-backend/logging"
 )
@@ -23,24 +24,24 @@ const visitPrefixFormat = "2006-01-02"
 const RetentionPeriod = 365 * 24 * time.Hour
 
 type Repository struct {
-	data       map[string]*Data
-	dataMutex  sync.Mutex
-	classifier *TrafficClassifier
-	conf       config.Website
-	log        logging.Logger
+	data         map[string]*domain.Data
+	dataMutex    sync.Mutex
+	repositories *Repositories
+	conf         config.Website
+	log          logging.Logger
 }
 
-func NewRepository(conf config.Website) *Repository {
+func NewRepository(conf config.Website, repositories *Repositories) *Repository {
 	rv := &Repository{
-		data:       make(map[string]*Data),
-		classifier: NewTrafficClassifier(),
-		log:        logging.New("repository"),
-		conf:       conf,
+		data:         make(map[string]*domain.Data),
+		repositories: repositories,
+		log:          logging.New("repository"),
+		conf:         conf,
 	}
 	return rv
 }
 
-func (r *Repository) Insert(entry *parser.Entry) error {
+func (r *Repository) Insert(entry *parser.Entry, category domain.Category) error {
 	r.dataMutex.Lock()
 	defer r.dataMutex.Unlock()
 
@@ -48,27 +49,25 @@ func (r *Repository) Insert(entry *parser.Entry) error {
 		return nil
 	}
 
-	category := r.classifier.Classify(entry)
-
 	r.normalize(entry)
 
 	key := r.createKey(entry.Time)
 	data, ok := r.data[key]
 	if !ok {
-		data = NewData()
+		data = domain.NewData()
 		r.data[key] = data
 	}
 	return data.Insert(entry, category)
 }
 
-func (r *Repository) RetrieveHour(year int, month time.Month, day int, hour int, filter Filter) (*Summary, bool) {
+func (r *Repository) RetrieveHour(year int, month time.Month, day int, hour int, filter domain.Filter) (*domain.Summary, bool) {
+	t := time.Date(year, month, day, hour, 0, 0, 0, time.UTC)
+	maliciousAddresses := r.maliciousAddresses(t, t)
+
 	r.dataMutex.Lock()
 	defer r.dataMutex.Unlock()
 
-	target := NewSummary()
-
-	t := time.Date(year, month, day, hour, 0, 0, 0, time.UTC)
-	maliciousAddresses := r.maliciousAddresses(t, t)
+	target := domain.NewSummary()
 
 	key := r.createKey(t)
 	if d, ok := r.data[key]; ok {
@@ -77,14 +76,14 @@ func (r *Repository) RetrieveHour(year int, month time.Month, day int, hour int,
 	return target, true
 }
 
-func (r *Repository) RetrieveDay(year int, month time.Month, day int, filter Filter) (*Summary, bool) {
+func (r *Repository) RetrieveDay(year int, month time.Month, day int, filter domain.Filter) (*domain.Summary, bool) {
+	times := iterateDay(year, month, day)
+	maliciousAddresses := r.maliciousAddresses(times[0], times[len(times)-1])
+
 	r.dataMutex.Lock()
 	defer r.dataMutex.Unlock()
 
-	target := NewSummary()
-
-	times := iterateDay(year, month, day)
-	maliciousAddresses := r.maliciousAddresses(times[0], times[len(times)-1])
+	target := domain.NewSummary()
 
 	for _, t := range times {
 		key := r.createKey(t)
@@ -95,14 +94,14 @@ func (r *Repository) RetrieveDay(year int, month time.Month, day int, filter Fil
 	return target, true
 }
 
-func (r *Repository) RetrieveMonth(year int, month time.Month, filter Filter) (*Summary, bool) {
+func (r *Repository) RetrieveMonth(year int, month time.Month, filter domain.Filter) (*domain.Summary, bool) {
+	times := iterateMonth(year, month)
+	maliciousAddresses := r.maliciousAddresses(times[0], times[len(times)-1])
+
 	r.dataMutex.Lock()
 	defer r.dataMutex.Unlock()
 
-	target := NewSummary()
-
-	times := iterateMonth(year, month)
-	maliciousAddresses := r.maliciousAddresses(times[0], times[len(times)-1])
+	target := domain.NewSummary()
 
 	for _, t := range times {
 		key := r.createKey(t)
@@ -116,16 +115,25 @@ func (r *Repository) RetrieveMonth(year int, month time.Month, filter Filter) (*
 // maliciousAddresses counts the malicious requests made within the window
 // surrounding the retrieved range as the addresses which are malicious there
 // affect the categories of the entries which are about to be returned.
-func (r *Repository) maliciousAddresses(from, to time.Time) *MaliciousAddresses {
-	rv := NewMaliciousAddresses()
+func (r *Repository) maliciousAddresses(from, to time.Time) *domain.MaliciousAddresses {
+	rv := domain.NewMaliciousAddresses()
+	r.repositories.ForEachData(from.Add(-domain.TrafficWindow), to.Add(domain.TrafficWindow), func(t time.Time, data *domain.Data) {
+		rv.Insert(data)
+	})
+	return rv
+}
 
-	for t := from.Add(-trafficWindow); !t.After(to.Add(trafficWindow)); t = t.Add(time.Hour) {
+// forEachData calls the provided function for every hour of the stored data
+// which falls within the provided range.
+func (r *Repository) forEachData(from, to time.Time, fn func(t time.Time, data *domain.Data)) {
+	r.dataMutex.Lock()
+	defer r.dataMutex.Unlock()
+
+	for t := from; !t.After(to); t = t.Add(time.Hour) {
 		if d, ok := r.data[r.createKey(t)]; ok {
-			rv.Insert(d, t)
+			fn(t, d)
 		}
 	}
-
-	return rv
 }
 
 // RemoveOldData discards the data which is older than the retention period.
@@ -199,14 +207,14 @@ func iterateMonth(year int, month time.Month) []time.Time {
 	return result
 }
 
-func mergeData(target *Summary, source *Data, t time.Time, filter Filter, maliciousAddresses *MaliciousAddresses) {
+func mergeData(target *domain.Summary, source *domain.Data, t time.Time, filter domain.Filter, maliciousAddresses *domain.MaliciousAddresses) {
 	visitPrefix := t.Format(visitPrefixFormat)
 
 	for storedCategory, categoryData := range source.Categories {
 		for remoteAddress, remoteAddressData := range categoryData.RemoteAddresses {
 			category := storedCategory
-			if maliciousAddresses.IsMalicious(remoteAddress, t) {
-				category = CategoryMalicious
+			if maliciousAddresses.IsMalicious(remoteAddress) {
+				category = domain.CategoryMalicious
 			}
 
 			categoryMatches := filter.MatchesCategory(category)
@@ -231,7 +239,7 @@ func mergeData(target *Summary, source *Data, t time.Time, filter Filter, malici
 								continue
 							}
 
-							visit := createVisitHash(visitPrefix, remoteAddress, userAgent)
+							visit := domain.CreateVisitHash(visitPrefix, remoteAddress, userAgent)
 
 							target.InsertCategoryLeaf(category, visit, userAgentData.Counters)
 

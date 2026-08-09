@@ -5,12 +5,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/boreq/plum/plum-backend/app"
 	"github.com/boreq/plum/plum-backend/domain"
 )
 
 type RepositoriesEntry struct {
 	Name       domain.WebsiteName
-	Repository *domain.Repository
+	Repository *Repository
 }
 
 type Repositories struct {
@@ -24,7 +25,7 @@ func NewRepositories() *Repositories {
 	}
 }
 
-func (r *Repositories) Add(name domain.WebsiteName, repo *domain.Repository) error {
+func (r *Repositories) Add(name domain.WebsiteName, repo *Repository) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
@@ -40,14 +41,14 @@ func (r *Repositories) Add(name domain.WebsiteName, repo *domain.Repository) err
 	return nil
 }
 
-func (r *Repositories) Get(name domain.WebsiteName) (*domain.Repository, bool) {
+func (r *Repositories) Get(name domain.WebsiteName) (app.Repository, bool) {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 
 	return r.get(name)
 }
 
-func (r *Repositories) get(name domain.WebsiteName) (*domain.Repository, bool) {
+func (r *Repositories) get(name domain.WebsiteName) (*Repository, bool) {
 	for _, entry := range r.repositories {
 		if entry.Name == name {
 			return entry.Repository, true
@@ -65,6 +66,17 @@ func (r *Repositories) RemoveOldData(now time.Time) {
 
 	for _, entry := range r.repositories {
 		entry.Repository.RemoveOldData(now)
+	}
+}
+
+// ForEachData calls the provided function for every hour of the data stored in
+// all repositories which falls within the provided range.
+func (r *Repositories) ForEachData(from, to time.Time, fn func(t time.Time, data *domain.Data)) {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
+	for _, entry := range r.repositories {
+		entry.Repository.forEachData(from, to, fn)
 	}
 }
 

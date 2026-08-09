@@ -5,6 +5,7 @@ import (
 
 	"github.com/boreq/errors"
 	"github.com/boreq/plum/plum-backend/domain"
+	"github.com/boreq/plum/plum-backend/domain/parser"
 )
 
 var (
@@ -12,8 +13,15 @@ var (
 	ErrDataNotFound    = errors.New("data not found")
 )
 
+type Repository interface {
+	Insert(entry *parser.Entry, category domain.Category) error
+	RetrieveHour(year int, month time.Month, day int, hour int, filter domain.Filter) (*domain.Summary, bool)
+	RetrieveDay(year int, month time.Month, day int, filter domain.Filter) (*domain.Summary, bool)
+	RetrieveMonth(year int, month time.Month, filter domain.Filter) (*domain.Summary, bool)
+}
+
 type Repositories interface {
-	Get(name domain.WebsiteName) (*domain.Repository, bool)
+	Get(name domain.WebsiteName) (Repository, bool)
 	Names() []domain.WebsiteName
 	RemoveOldData(now time.Time)
 }
@@ -40,7 +48,7 @@ func New(repositories Repositories) *Application {
 		GetRangeDaily:   NewGetRangeDailyHandler(repositories),
 		GetRangeMonthly: NewGetRangeMonthlyHandler(repositories),
 		RemoveOldData:   NewRemoveOldDataHandler(repositories),
-		AddRequest:      NewAddRequestHandler(repositories),
+		AddRequest:      NewAddRequestHandler(repositories, domain.NewTrafficClassifier()),
 	}
 }
 

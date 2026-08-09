@@ -12,11 +12,13 @@ type AddRequest struct {
 
 type AddRequestHandler struct {
 	repositories Repositories
+	classifier   *domain.TrafficClassifier
 }
 
-func NewAddRequestHandler(repositories Repositories) *AddRequestHandler {
+func NewAddRequestHandler(repositories Repositories, classifier *domain.TrafficClassifier) *AddRequestHandler {
 	return &AddRequestHandler{
 		repositories: repositories,
+		classifier:   classifier,
 	}
 }
 
@@ -26,5 +28,7 @@ func (h *AddRequestHandler) Execute(cmd AddRequest) error {
 		return ErrWebsiteNotFound
 	}
 
-	return repository.Insert(cmd.Entry)
+	category := h.classifier.Classify(cmd.Entry)
+
+	return repository.Insert(cmd.Entry, category)
 }
