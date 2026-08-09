@@ -38,8 +38,7 @@ Or using Docker Compose:
           - "9000:8118"
         restart: always
 
-Here `./plum` is a checkout of this repository. Both volumes are mounted
-read-only as Plum only ever reads from them.
+Here `./plum` is where you checked out this repository.
 
 The paths in the config file are the paths *inside* the container, so they have
 to match the mounted log directory:
