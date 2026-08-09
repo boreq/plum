@@ -1,20 +1,16 @@
 package app
 
-import (
-	"time"
-
-	"github.com/boreq/plum/domain"
-)
+import "time"
 
 type RemoveOldData struct {
 	Now time.Time
 }
 
 type RemoveOldDataHandler struct {
-	repositories *domain.Repositories
+	repositories Repositories
 }
 
-func NewRemoveOldDataHandler(repositories *domain.Repositories) *RemoveOldDataHandler {
+func NewRemoveOldDataHandler(repositories Repositories) *RemoveOldDataHandler {
 	return &RemoveOldDataHandler{
 		repositories: repositories,
 	}

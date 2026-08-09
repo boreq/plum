@@ -12,10 +12,10 @@ type GetHour struct {
 }
 
 type GetHourHandler struct {
-	repositories *domain.Repositories
+	repositories Repositories
 }
 
-func NewGetHourHandler(repositories *domain.Repositories) *GetHourHandler {
+func NewGetHourHandler(repositories Repositories) *GetHourHandler {
 	return &GetHourHandler{
 		repositories: repositories,
 	}

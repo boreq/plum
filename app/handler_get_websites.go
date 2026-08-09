@@ -6,10 +6,10 @@ type GetWebsites struct {
 }
 
 type GetWebsitesHandler struct {
-	repositories *domain.Repositories
+	repositories Repositories
 }
 
-func NewGetWebsitesHandler(repositories *domain.Repositories) *GetWebsitesHandler {
+func NewGetWebsitesHandler(repositories Repositories) *GetWebsitesHandler {
 	return &GetWebsitesHandler{
 		repositories: repositories,
 	}

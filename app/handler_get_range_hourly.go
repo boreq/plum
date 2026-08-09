@@ -13,10 +13,10 @@ type GetRangeHourly struct {
 }
 
 type GetRangeHourlyHandler struct {
-	repositories *domain.Repositories
+	repositories Repositories
 }
 
-func NewGetRangeHourlyHandler(repositories *domain.Repositories) *GetRangeHourlyHandler {
+func NewGetRangeHourlyHandler(repositories Repositories) *GetRangeHourlyHandler {
 	return &GetRangeHourlyHandler{
 		repositories: repositories,
 	}

@@ -1,4 +1,4 @@
-package domain
+package adapters_test
 
 import (
 	"bufio"
@@ -7,13 +7,61 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/boreq/plum/adapters"
 	"github.com/boreq/plum/config"
+	"github.com/boreq/plum/domain"
 	"github.com/boreq/plum/domain/parser"
 )
 
 var benchmarkLogPath = flag.String("benchmark-log", "", "path to an access log in the combined format which the benchmarks are run against")
 
 const benchmarkLines = 500000
+
+type insertingHandler struct {
+	parser     *parser.Parser
+	repository *domain.Repository
+}
+
+func (h insertingHandler) Handle(line string) error {
+	entry, err := h.parser.Parse(line)
+	if err != nil {
+		return err
+	}
+	return h.repository.Insert(entry)
+}
+
+func BenchmarkLoadOldEntries(b *testing.B) {
+	benchmarkLoad(b, false)
+}
+
+func BenchmarkLoadRecentEntries(b *testing.B) {
+	benchmarkLoad(b, true)
+}
+
+func benchmarkLoad(b *testing.B, fromEnd bool) {
+	path, lines := benchmarkLog(b, fromEnd)
+
+	p, err := parser.NewParser(parser.PredefinedFormats["combined"])
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		handler := insertingHandler{
+			parser:     p,
+			repository: domain.NewRepository(config.Website{}),
+		}
+
+		if err := adapters.NewLogReader().Load([]string{path}, handler); err != nil {
+			b.Fatal(err)
+		}
+	}
+
+	b.StopTimer()
+	b.ReportMetric(float64(lines)*float64(b.N)/b.Elapsed().Seconds(), "lines/s")
+}
 
 func benchmarkLog(b *testing.B, fromEnd bool) (string, int) {
 	b.Helper()
@@ -78,71 +126,4 @@ func benchmarkLog(b *testing.B, fromEnd bool) (string, int) {
 	}
 
 	return path, lines
-}
-
-func BenchmarkLoadOldEntries(b *testing.B) {
-	benchmarkLoad(b, false)
-}
-
-func BenchmarkLoadRecentEntries(b *testing.B) {
-	benchmarkLoad(b, true)
-}
-
-func BenchmarkParse(b *testing.B) {
-	path, _ := benchmarkLog(b, true)
-
-	f, err := os.Open(path)
-	if err != nil {
-		b.Fatal(err)
-	}
-	defer f.Close()
-
-	var lines []string
-	scanner := bufio.NewScanner(f)
-	scanner.Buffer(make([]byte, 1024*1024), 1024*1024)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	if err := scanner.Err(); err != nil {
-		b.Fatal(err)
-	}
-
-	p, err := parser.NewParser(parser.PredefinedFormats["combined"])
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		for _, line := range lines {
-			if _, err := p.Parse(line); err != nil {
-				b.Fatal(err)
-			}
-		}
-	}
-
-	b.StopTimer()
-	b.ReportMetric(float64(len(lines))*float64(b.N)/b.Elapsed().Seconds(), "lines/s")
-}
-
-func benchmarkLoad(b *testing.B, fromEnd bool) {
-	path, lines := benchmarkLog(b, fromEnd)
-
-	p, err := parser.NewParser(parser.PredefinedFormats["combined"])
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		tracker := NewTracker(p, NewRepository(config.Website{}))
-		if err := tracker.Load(path); err != nil {
-			b.Fatal(err)
-		}
-	}
-
-	b.StopTimer()
-	b.ReportMetric(float64(lines)*float64(b.N)/b.Elapsed().Seconds(), "lines/s")
 }

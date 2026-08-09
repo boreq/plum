@@ -13,10 +13,10 @@ type GetRangeDaily struct {
 }
 
 type GetRangeDailyHandler struct {
-	repositories *domain.Repositories
+	repositories Repositories
 }
 
-func NewGetRangeDailyHandler(repositories *domain.Repositories) *GetRangeDailyHandler {
+func NewGetRangeDailyHandler(repositories Repositories) *GetRangeDailyHandler {
 	return &GetRangeDailyHandler{
 		repositories: repositories,
 	}

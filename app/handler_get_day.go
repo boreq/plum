@@ -12,10 +12,10 @@ type GetDay struct {
 }
 
 type GetDayHandler struct {
-	repositories *domain.Repositories
+	repositories Repositories
 }
 
-func NewGetDayHandler(repositories *domain.Repositories) *GetDayHandler {
+func NewGetDayHandler(repositories Repositories) *GetDayHandler {
 	return &GetDayHandler{
 		repositories: repositories,
 	}

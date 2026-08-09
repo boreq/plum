@@ -1,17 +1,21 @@
-package domain
+package adapters
 
 import (
 	"fmt"
+	"sync"
 	"time"
+
+	"github.com/boreq/plum/domain"
 )
 
 type RepositoriesEntry struct {
-	Name       WebsiteName
-	Repository *Repository
+	Name       domain.WebsiteName
+	Repository *domain.Repository
 }
 
 type Repositories struct {
 	repositories []RepositoriesEntry
+	mutex        sync.RWMutex
 }
 
 func NewRepositories() *Repositories {
@@ -20,9 +24,11 @@ func NewRepositories() *Repositories {
 	}
 }
 
-func (r *Repositories) Add(name WebsiteName, repo *Repository) error {
-	_, ok := r.Get(name)
-	if ok {
+func (r *Repositories) Add(name domain.WebsiteName, repo *domain.Repository) error {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	if _, ok := r.get(name); ok {
 		return fmt.Errorf("repository '%s' already exists", name)
 	}
 
@@ -34,7 +40,14 @@ func (r *Repositories) Add(name WebsiteName, repo *Repository) error {
 	return nil
 }
 
-func (r *Repositories) Get(name WebsiteName) (*Repository, bool) {
+func (r *Repositories) Get(name domain.WebsiteName) (*domain.Repository, bool) {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
+	return r.get(name)
+}
+
+func (r *Repositories) get(name domain.WebsiteName) (*domain.Repository, bool) {
 	for _, entry := range r.repositories {
 		if entry.Name == name {
 			return entry.Repository, true
@@ -47,13 +60,19 @@ func (r *Repositories) Get(name WebsiteName) (*Repository, bool) {
 // RemoveOldData discards the data which is older than the retention period in
 // all repositories.
 func (r *Repositories) RemoveOldData(now time.Time) {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
 	for _, entry := range r.repositories {
 		entry.Repository.RemoveOldData(now)
 	}
 }
 
-func (r *Repositories) Names() []WebsiteName {
-	var names []WebsiteName
+func (r *Repositories) Names() []domain.WebsiteName {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
+	var names []domain.WebsiteName
 
 	for _, entry := range r.repositories {
 		names = append(names, entry.Name)

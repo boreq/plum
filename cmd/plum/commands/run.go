@@ -3,17 +3,18 @@ package commands
 import (
 	"encoding/json"
 	"os"
-	"path/filepath"
 	"runtime"
 	"time"
 
 	"github.com/boreq/errors"
 	"github.com/boreq/guinea"
+	"github.com/boreq/plum/adapters"
 	"github.com/boreq/plum/app"
 	"github.com/boreq/plum/config"
 	"github.com/boreq/plum/domain"
 	"github.com/boreq/plum/domain/parser"
 	"github.com/boreq/plum/entrypoints/http"
+	"github.com/boreq/plum/entrypoints/logs"
 	"github.com/boreq/plum/entrypoints/timers"
 	"github.com/dustin/go-humanize"
 )
@@ -41,9 +42,11 @@ func runRun(c guinea.Context) error {
 
 	errC := make(chan error)
 
-	repositories := domain.NewRepositories()
+	repositories := adapters.NewRepositories()
 
 	go logMemoryStats()
+
+	application := app.New(repositories)
 
 	for i := range conf.Websites {
 		website := conf.Websites[i]
@@ -58,37 +61,27 @@ func runRun(c guinea.Context) error {
 			return err
 		}
 
-		r := domain.NewRepository(website)
-
-		tracker := domain.NewTracker(p, r)
-
-		go printStats(website.Name, tracker)
-
-		// Load the specified files
-		for _, glob := range website.Load {
-			paths, err := filepath.Glob(glob)
-			if err != nil {
-				return errors.Wrapf(err, "could not process a glob pattern '%s", glob)
-			}
-
-			for _, path := range paths {
-				if err := tracker.Load(path); err != nil {
-					return err
-				}
-			}
-		}
-
-		// Track the specified file
-		go func() {
-			errC <- tracker.Follow(website.Follow)
-		}()
-
-		if err := repositories.Add(websiteName, r); err != nil {
+		if err := repositories.Add(websiteName, domain.NewRepository(website)); err != nil {
 			return errors.Wrap(err, "could not add a repository")
 		}
-	}
 
-	application := app.New(repositories)
+		logReader := adapters.NewLogReader()
+
+		entrypoint := logs.New(
+			websiteName,
+			p,
+			website.Load,
+			website.Follow,
+			logReader,
+			application.AddRequest,
+		)
+
+		go printStats(website.Name, logReader)
+
+		go func() {
+			errC <- entrypoint.Run()
+		}()
+	}
 
 	removeOldData := timers.NewRemoveOldData(application.RemoveOldData, removeOldDataEvery)
 
@@ -121,11 +114,11 @@ func getLogFormat(format string) string {
 	return format
 }
 
-func printStats(websiteName string, tracker *domain.Tracker) {
-	lastLines, _ := tracker.GetStats()
+func printStats(websiteName string, logReader *adapters.LogReader) {
+	lastLines, _ := logReader.GetStats()
 	duration := 5 * time.Second
 	for range time.Tick(duration) {
-		lines, _ := tracker.GetStats()
+		lines, _ := logReader.GetStats()
 		linesPerSecond := float64(lines-lastLines) / duration.Seconds()
 		log.Debug("data statistics", "totalLines", lines, "linesPerSecond", linesPerSecond, "website", websiteName)
 		lastLines = lines

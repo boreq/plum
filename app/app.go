@@ -12,6 +12,12 @@ var (
 	ErrDataNotFound    = errors.New("data not found")
 )
 
+type Repositories interface {
+	Get(name domain.WebsiteName) (*domain.Repository, bool)
+	Names() []domain.WebsiteName
+	RemoveOldData(now time.Time)
+}
+
 type Application struct {
 	GetWebsites     *GetWebsitesHandler
 	GetHour         *GetHourHandler
@@ -21,9 +27,10 @@ type Application struct {
 	GetRangeDaily   *GetRangeDailyHandler
 	GetRangeMonthly *GetRangeMonthlyHandler
 	RemoveOldData   *RemoveOldDataHandler
+	AddRequest      *AddRequestHandler
 }
 
-func New(repositories *domain.Repositories) *Application {
+func New(repositories Repositories) *Application {
 	return &Application{
 		GetWebsites:     NewGetWebsitesHandler(repositories),
 		GetHour:         NewGetHourHandler(repositories),
@@ -33,6 +40,7 @@ func New(repositories *domain.Repositories) *Application {
 		GetRangeDaily:   NewGetRangeDailyHandler(repositories),
 		GetRangeMonthly: NewGetRangeMonthlyHandler(repositories),
 		RemoveOldData:   NewRemoveOldDataHandler(repositories),
+		AddRequest:      NewAddRequestHandler(repositories),
 	}
 }
 

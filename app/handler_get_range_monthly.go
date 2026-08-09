@@ -13,10 +13,10 @@ type GetRangeMonthly struct {
 }
 
 type GetRangeMonthlyHandler struct {
-	repositories *domain.Repositories
+	repositories Repositories
 }
 
-func NewGetRangeMonthlyHandler(repositories *domain.Repositories) *GetRangeMonthlyHandler {
+func NewGetRangeMonthlyHandler(repositories Repositories) *GetRangeMonthlyHandler {
 	return &GetRangeMonthlyHandler{
 		repositories: repositories,
 	}
