@@ -7,6 +7,7 @@ cd "$(dirname "$0")/.."
 echo "Running yarn build"
 cd plum-frontend
 rm -rf dist
+corepack yarn install --immutable
 corepack yarn build
 
 # Build backend

@@ -1,9 +1,68 @@
 # Plum
 
-Plum is a real-time web server access log analyser. It allows the user to
-access the statistics using a web dashboard.
+Plum is a self-hosted real-time web server access log analyser. It allows you
+to view analytics derived from your web server logs using a web dashboard. No
+analytics services integrating with your software required. Just tell Plum
+where your access logs are.
+
+I built Plum for several reasons. Due to laziness, I wanted to avoid manually
+adding analytics to all my software. Due to privacy concerns, I wanted to avoid
+existing analytics services, which usually means sending data to external
+parties. You can find open source and self-hosted alternatives, but if they are
+based on some kind of tracking on the user side of things then most people
+block them anyway, which makes them ineffective.
 
 ## Installation
+
+### Docker
+
+The repository ships a `Dockerfile`. Mount your config at `/config.json` and
+the log files at the paths it references:
+
+    $ docker build -t plum .
+    $ docker run \
+        -v /var/log/nginx:/var/log/nginx:ro \
+        -v $(pwd)/config.json:/config.json:ro \
+        -p 9000:8118 \
+        plum
+
+Or using Docker Compose:
+
+    services:
+      plum:
+        build: ./plum
+        volumes:
+          - /var/log/nginx:/var/log/nginx:ro
+          - ./config.json:/config.json:ro
+        ports:
+          - "9000:8118"
+        restart: always
+
+Here `./plum` is a checkout of this repository. Both volumes are mounted
+read-only as Plum only ever reads from them.
+
+The paths in the config file are the paths *inside* the container, so they have
+to match the mounted log directory:
+
+    $ cat config.json
+    {
+        "serveAddress": ":8118",
+        "websites": [
+            {
+                "name": "example.com",
+                "follow": "/var/log/nginx/example.access.log",
+                "load": [
+                    "/var/log/nginx/example.access.log.*"
+                ],
+                "logFormat": "combined"
+            }
+        ]
+    }
+
+With the compose file above the dashboard is available on the host under
+http://127.0.0.1:9000.
+
+### Manual
 
 Plum is written in Go which means that the Go tools can be used to install the
 program using the following command:
@@ -69,5 +128,21 @@ option.
 
 
 #### Custom formats
-When using a custom format a number of elements can be used to construct it, check out [parser.go](https://github.com/boreq/plum/blob/master/parser/parser.go).
+When using a custom format a number of elements can be used to construct it, check out [parser.go](https://github.com/boreq/plum/blob/master/plum-backend/domain/parser/parser.go).
+
+## Building the frontend
+
+The dashboard lives in `plum-frontend` and is compiled into the binary, so a
+plain `go install` or `docker build` does not require Node. The generated
+assets are committed to the repository in
+`plum-backend/entrypoints/http/statik`.
+
+After changing anything in `plum-frontend` regenerate them:
+
+    $ make frontend
+
+This installs the frontend dependencies, runs the Vite build and packs the
+result into `statik.go`. The output is deterministic, so an unchanged frontend
+produces an unchanged `statik.go`. Commit the regenerated file together with
+the frontend changes.
 

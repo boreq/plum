@@ -6,4 +6,4 @@ WORKDIR /plum
 COPY ./plum-backend ./
 RUN go install -v ./cmd/plum
 
-CMD ["/bin/sh", "-c", "plum run --verbosity debug /data/config.json"]
+CMD ["/bin/sh", "-c", "plum run --verbosity debug /config.json"]
