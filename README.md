@@ -129,7 +129,13 @@ option.
 #### Custom formats
 When using a custom format a number of elements can be used to construct it, check out [parser.go](https://github.com/boreq/plum/blob/master/plum-backend/domain/parser/parser.go).
 
-## Building the frontend
+## Development
+
+Run the checks which run in CI, both for the backend and the frontend:
+
+    $ make ci
+
+### Building the frontend
 
 The dashboard lives in `plum-frontend` and is compiled into the binary, so a
 plain `go install` or `docker build` does not require Node. The generated
