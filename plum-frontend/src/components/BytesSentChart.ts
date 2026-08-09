@@ -126,6 +126,11 @@ export default defineComponent({
                     animation: {
                         duration: ChartAnimation.Duration,
                     },
+                    interaction: {
+                        mode: 'index',
+                        axis: 'x',
+                        intersect: false,
+                    },
                     scales: {
                         x: {
                             ticks: {
@@ -153,6 +158,8 @@ export default defineComponent({
                         },
                         tooltip: {
                             mode: 'index',
+                            axis: 'x',
+                            intersect: false,
                             callbacks: {
                                 label: context => {
                                     return textService.humanizeBytes(context.parsed.y);
