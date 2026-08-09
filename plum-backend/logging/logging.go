@@ -1,7 +1,7 @@
 package logging
 
 import (
-	"github.com/inconshreveable/log15"
+	log15 "github.com/inconshreveable/log15/v3"
 )
 
 type Logger = log15.Logger
@@ -17,7 +17,7 @@ func init() {
 
 func New(name string) Logger {
 	log := log15.New("source", name)
-	log.SetHandler(log15.FilterHandler(func(r *log15.Record) (pass bool) {
+	log.SetHandler(log15.FilterHandler(func(r log15.Record) (pass bool) {
 		return r.Lvl <= *maxLevel
 	}, log15.StdoutHandler))
 	return log

@@ -9,8 +9,8 @@ import (
 	"github.com/boreq/errors"
 	"github.com/boreq/plum/plum-backend/app"
 	"github.com/boreq/plum/plum-backend/domain"
-	"github.com/boreq/plum/plum-backend/entrypoints/http/api"
 	_ "github.com/boreq/plum/plum-backend/entrypoints/http/statik"
+	"github.com/boreq/rest"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rakyll/statik/fs"
 )
@@ -32,17 +32,17 @@ func NewHandler(app *app.Application) (*Handler, error) {
 	}
 
 	// List websites
-	h.router.GET("/api/websites", api.Wrap(h.websites))
+	h.router.HandlerFunc(http.MethodGet, "/api/websites", rest.Wrap(h.websites))
 
 	// Discrete endpoints
-	h.router.GET("/api/websites/:name/hour/:year/:month/:day/:hour", api.Wrap(h.hour))
-	h.router.GET("/api/websites/:name/day/:year/:month/:day", api.Wrap(h.day))
-	h.router.GET("/api/websites/:name/month/:year/:month", api.Wrap(h.month))
+	h.router.HandlerFunc(http.MethodGet, "/api/websites/:name/hour/:year/:month/:day/:hour", rest.Wrap(h.hour))
+	h.router.HandlerFunc(http.MethodGet, "/api/websites/:name/day/:year/:month/:day", rest.Wrap(h.day))
+	h.router.HandlerFunc(http.MethodGet, "/api/websites/:name/month/:year/:month", rest.Wrap(h.month))
 
 	// Range endpoints
-	h.router.GET("/api/websites/:name/range/hourly/:yearFrom/:monthFrom/:dayFrom/:hourFrom/:yearTo/:monthTo/:dayTo/:hourTo", api.Wrap(h.rangeHourly))
-	h.router.GET("/api/websites/:name/range/daily/:yearFrom/:monthFrom/:dayFrom/:yearTo/:monthTo/:dayTo", api.Wrap(h.rangeDaily))
-	h.router.GET("/api/websites/:name/range/monthly/:yearFrom/:monthFrom/:yearTo/:monthTo", api.Wrap(h.rangeMonthly))
+	h.router.HandlerFunc(http.MethodGet, "/api/websites/:name/range/hourly/:yearFrom/:monthFrom/:dayFrom/:hourFrom/:yearTo/:monthTo/:dayTo/:hourTo", rest.Wrap(h.rangeHourly))
+	h.router.HandlerFunc(http.MethodGet, "/api/websites/:name/range/daily/:yearFrom/:monthFrom/:dayFrom/:yearTo/:monthTo/:dayTo", rest.Wrap(h.rangeDaily))
+	h.router.HandlerFunc(http.MethodGet, "/api/websites/:name/range/monthly/:yearFrom/:monthFrom/:yearTo/:monthTo", rest.Wrap(h.rangeMonthly))
 
 	// Frontend
 	h.router.NotFound = http.FileServer(statikFS)
@@ -54,28 +54,30 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.router.ServeHTTP(w, r)
 }
 
-func (h *Handler) websites(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+func (h *Handler) websites(r *http.Request) rest.RestResponse {
 	websites, err := h.app.GetWebsites.Execute(app.GetWebsites{})
 	if err != nil {
-		return nil, mapError(err)
+		return mapError(err)
 	}
-	return newWebsites(websites), nil
+	return rest.NewResponse(newWebsites(websites))
 }
 
-func (h *Handler) hour(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+func (h *Handler) hour(r *http.Request) rest.RestResponse {
+	ps := httprouter.ParamsFromContext(r.Context())
+
 	hour, err := getHour(ps, "year", "month", "day", "hour")
 	if err != nil {
-		return nil, api.BadRequest
+		return rest.ErrBadRequest
 	}
 
 	filter, err := getFilter(r)
 	if err != nil {
-		return nil, api.BadRequest
+		return rest.ErrBadRequest
 	}
 
 	websiteName, err := getWebsiteName(ps)
 	if err != nil {
-		return nil, api.BadRequest
+		return rest.ErrBadRequest
 	}
 
 	summary, err := h.app.GetHour.Execute(app.GetHour{
@@ -84,26 +86,28 @@ func (h *Handler) hour(r *http.Request, ps httprouter.Params) (interface{}, api.
 		Filter:  filter,
 	})
 	if err != nil {
-		return nil, mapError(err)
+		return mapError(err)
 	}
 
-	return newData(summary), nil
+	return rest.NewResponse(newData(summary))
 }
 
-func (h *Handler) day(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+func (h *Handler) day(r *http.Request) rest.RestResponse {
+	ps := httprouter.ParamsFromContext(r.Context())
+
 	day, err := getDay(ps, "year", "month", "day")
 	if err != nil {
-		return nil, api.BadRequest
+		return rest.ErrBadRequest
 	}
 
 	filter, err := getFilter(r)
 	if err != nil {
-		return nil, api.BadRequest
+		return rest.ErrBadRequest
 	}
 
 	websiteName, err := getWebsiteName(ps)
 	if err != nil {
-		return nil, api.BadRequest
+		return rest.ErrBadRequest
 	}
 
 	summary, err := h.app.GetDay.Execute(app.GetDay{
@@ -112,26 +116,28 @@ func (h *Handler) day(r *http.Request, ps httprouter.Params) (interface{}, api.E
 		Filter:  filter,
 	})
 	if err != nil {
-		return nil, mapError(err)
+		return mapError(err)
 	}
 
-	return newData(summary), nil
+	return rest.NewResponse(newData(summary))
 }
 
-func (h *Handler) month(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+func (h *Handler) month(r *http.Request) rest.RestResponse {
+	ps := httprouter.ParamsFromContext(r.Context())
+
 	month, err := getMonth(ps, "year", "month")
 	if err != nil {
-		return nil, api.BadRequest
+		return rest.ErrBadRequest
 	}
 
 	filter, err := getFilter(r)
 	if err != nil {
-		return nil, api.BadRequest
+		return rest.ErrBadRequest
 	}
 
 	websiteName, err := getWebsiteName(ps)
 	if err != nil {
-		return nil, api.BadRequest
+		return rest.ErrBadRequest
 	}
 
 	summary, err := h.app.GetMonth.Execute(app.GetMonth{
@@ -140,31 +146,33 @@ func (h *Handler) month(r *http.Request, ps httprouter.Params) (interface{}, api
 		Filter:  filter,
 	})
 	if err != nil {
-		return nil, mapError(err)
+		return mapError(err)
 	}
 
-	return newData(summary), nil
+	return rest.NewResponse(newData(summary))
 }
 
-func (h *Handler) rangeHourly(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+func (h *Handler) rangeHourly(r *http.Request) rest.RestResponse {
+	ps := httprouter.ParamsFromContext(r.Context())
+
 	from, err := getHour(ps, "yearFrom", "monthFrom", "dayFrom", "hourFrom")
 	if err != nil {
-		return nil, api.BadRequest
+		return rest.ErrBadRequest
 	}
 
 	to, err := getHour(ps, "yearTo", "monthTo", "dayTo", "hourTo")
 	if err != nil {
-		return nil, api.BadRequest
+		return rest.ErrBadRequest
 	}
 
 	filter, err := getFilter(r)
 	if err != nil {
-		return nil, api.BadRequest
+		return rest.ErrBadRequest
 	}
 
 	websiteName, err := getWebsiteName(ps)
 	if err != nil {
-		return nil, api.BadRequest
+		return rest.ErrBadRequest
 	}
 
 	rangeResult, err := h.app.GetRangeHourly.Execute(app.GetRangeHourly{
@@ -174,31 +182,33 @@ func (h *Handler) rangeHourly(r *http.Request, ps httprouter.Params) (interface{
 		Filter:  filter,
 	})
 	if err != nil {
-		return nil, mapError(err)
+		return mapError(err)
 	}
 
-	return NewRangeResult(rangeResult), nil
+	return rest.NewResponse(NewRangeResult(rangeResult))
 }
 
-func (h *Handler) rangeDaily(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+func (h *Handler) rangeDaily(r *http.Request) rest.RestResponse {
+	ps := httprouter.ParamsFromContext(r.Context())
+
 	from, err := getDay(ps, "yearFrom", "monthFrom", "dayFrom")
 	if err != nil {
-		return nil, api.BadRequest
+		return rest.ErrBadRequest
 	}
 
 	to, err := getDay(ps, "yearTo", "monthTo", "dayTo")
 	if err != nil {
-		return nil, api.BadRequest
+		return rest.ErrBadRequest
 	}
 
 	filter, err := getFilter(r)
 	if err != nil {
-		return nil, api.BadRequest
+		return rest.ErrBadRequest
 	}
 
 	websiteName, err := getWebsiteName(ps)
 	if err != nil {
-		return nil, api.BadRequest
+		return rest.ErrBadRequest
 	}
 
 	rangeResult, err := h.app.GetRangeDaily.Execute(app.GetRangeDaily{
@@ -208,31 +218,33 @@ func (h *Handler) rangeDaily(r *http.Request, ps httprouter.Params) (interface{}
 		Filter:  filter,
 	})
 	if err != nil {
-		return nil, mapError(err)
+		return mapError(err)
 	}
 
-	return NewRangeResult(rangeResult), nil
+	return rest.NewResponse(NewRangeResult(rangeResult))
 }
 
-func (h *Handler) rangeMonthly(r *http.Request, ps httprouter.Params) (interface{}, api.Error) {
+func (h *Handler) rangeMonthly(r *http.Request) rest.RestResponse {
+	ps := httprouter.ParamsFromContext(r.Context())
+
 	from, err := getMonth(ps, "yearFrom", "monthFrom")
 	if err != nil {
-		return nil, api.BadRequest
+		return rest.ErrBadRequest
 	}
 
 	to, err := getMonth(ps, "yearTo", "monthTo")
 	if err != nil {
-		return nil, api.BadRequest
+		return rest.ErrBadRequest
 	}
 
 	filter, err := getFilter(r)
 	if err != nil {
-		return nil, api.BadRequest
+		return rest.ErrBadRequest
 	}
 
 	websiteName, err := getWebsiteName(ps)
 	if err != nil {
-		return nil, api.BadRequest
+		return rest.ErrBadRequest
 	}
 
 	rangeResult, err := h.app.GetRangeMonthly.Execute(app.GetRangeMonthly{
@@ -242,24 +254,24 @@ func (h *Handler) rangeMonthly(r *http.Request, ps httprouter.Params) (interface
 		Filter:  filter,
 	})
 	if err != nil {
-		return nil, mapError(err)
+		return mapError(err)
 	}
 
-	return NewRangeResult(rangeResult), nil
+	return rest.NewResponse(NewRangeResult(rangeResult))
 }
 
 func getWebsiteName(ps httprouter.Params) (domain.WebsiteName, error) {
 	return domain.NewWebsiteName(ps.ByName("name"))
 }
 
-func mapError(err error) api.Error {
+func mapError(err error) rest.Error {
 	switch {
 	case errors.Is(err, app.ErrWebsiteNotFound):
-		return api.BadRequest
+		return rest.ErrBadRequest
 	case errors.Is(err, app.ErrDataNotFound):
-		return api.NotFound
+		return rest.ErrNotFound
 	default:
-		return api.InternalServerError
+		return rest.ErrInternalServerError
 	}
 }
 
