@@ -3,8 +3,8 @@ package http
 import (
 	"net/http"
 
-	"github.com/NYTimes/gziphandler"
 	"github.com/boreq/plum/plum-backend/logging"
+	"github.com/klauspost/compress/gzhttp"
 	"github.com/rs/cors"
 )
 
@@ -20,9 +20,13 @@ func NewServer(handler http.Handler) *Server {
 	}
 }
 
-func (s *Server) Serve(address string) error {
+func (s *Server) wrap() http.Handler {
 	handler := cors.AllowAll().Handler(s.handler)
-	handler = gziphandler.GzipHandler(handler)
+	return gzhttp.GzipHandler(handler)
+}
+
+func (s *Server) Serve(address string) error {
+	handler := s.wrap()
 
 	s.log.Info("starting listening", "address", address)
 	return http.ListenAndServe(address, handler)

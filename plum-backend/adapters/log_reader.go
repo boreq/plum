@@ -11,7 +11,7 @@ import (
 
 	"github.com/boreq/errors"
 	"github.com/boreq/plum/plum-backend/logging"
-	"github.com/hpcloud/tail"
+	"github.com/nxadm/tail"
 )
 
 type LineHandler interface {
