@@ -8,7 +8,7 @@ import (
 
 	"github.com/boreq/plum/plum-backend/config"
 	"github.com/boreq/plum/plum-backend/domain"
-	"github.com/boreq/plum/plum-backend/domain/parser"
+	"github.com/boreq/plum/plum-backend/domain/request"
 	"github.com/boreq/plum/plum-backend/logging"
 )
 
@@ -41,23 +41,23 @@ func NewRepository(conf config.Website, maliciousAddresses *MaliciousAddresses) 
 	return rv
 }
 
-func (r *Repository) Insert(entry *parser.Entry, category domain.Category) error {
+func (r *Repository) Insert(req request.Request, category domain.Category) error {
 	r.dataMutex.Lock()
 	defer r.dataMutex.Unlock()
 
-	if entry.Time.Before(retentionCutoff(time.Now())) {
+	if req.Timestamp().Before(retentionCutoff(time.Now())) {
 		return nil
 	}
 
-	r.normalize(entry)
+	req = r.normalize(req)
 
-	key := r.createKey(entry.Time)
+	key := r.createKey(req.Timestamp())
 	data, ok := r.data[key]
 	if !ok {
 		data = domain.NewData()
 		r.data[key] = data
 	}
-	return data.Insert(entry, category)
+	return data.Insert(req, category)
 }
 
 func (r *Repository) RetrieveHour(year int, month time.Month, day int, hour int, filter domain.Filter) (*domain.Summary, bool) {
@@ -136,27 +136,42 @@ func (r *Repository) createKey(date time.Time) string {
 	return date.UTC().Format(entryKeyFormat)
 }
 
-func (r *Repository) normalize(entry *parser.Entry) {
+func (r *Repository) normalize(req request.Request) request.Request {
+	uri := req.Uri().String()
+	referer := req.Referer().String()
+
 	if r.conf.NormalizeQuery {
-		u, err := url.ParseRequestURI(entry.HttpRequestURI)
+		u, err := url.ParseRequestURI(uri)
 		if err != nil {
-			if entry.Status != "400" {
-				r.log.Warn("query normalization failed", "err", err, "entry", entry)
+			if req.Status().String() != "400" {
+				r.log.Warn("query normalization failed", "err", err, "uri", uri)
 			}
 		} else {
 			u.RawQuery = ""
-			entry.HttpRequestURI = u.String()
+			uri = u.String()
 		}
 	}
 	if r.conf.NormalizeSlash {
-		if len(entry.HttpRequestURI) > 1 {
-			entry.HttpRequestURI = strings.TrimRight(entry.HttpRequestURI, "/")
+		if len(uri) > 1 {
+			uri = strings.TrimRight(uri, "/")
 		}
 	}
 	if r.conf.StripRefererProtocol {
-		entry.Referer = strings.TrimPrefix(entry.Referer, "http://")
-		entry.Referer = strings.TrimPrefix(entry.Referer, "https://")
+		referer = strings.TrimPrefix(referer, "http://")
+		referer = strings.TrimPrefix(referer, "https://")
 	}
+
+	return request.NewRequest(
+		req.RemoteAddress(),
+		req.Timestamp(),
+		req.Method(),
+		request.NewUri(uri),
+		req.Version(),
+		req.Status(),
+		req.BodyBytesSent(),
+		request.NewReferer(referer),
+		req.UserAgent(),
+	)
 }
 
 func iterateDay(year int, month time.Month, day int) []time.Time {
@@ -216,7 +231,7 @@ func mergeData(target *domain.Summary, source *domain.Data, t time.Time, filter 
 							target.InsertCategoryLeaf(category, visit, userAgentData.Counters)
 
 							if categoryMatches {
-								target.InsertLeaf(uri, status, referer, userAgent, userAgentData.Browser, visit, userAgentData.Counters)
+								target.InsertLeaf(uri.String(), status.String(), referer.String(), userAgent.String(), userAgentData.Browser, visit, userAgentData.Counters)
 							}
 						}
 					}

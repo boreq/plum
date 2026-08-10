@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -74,9 +75,9 @@ func (h *Handler) websites(r *http.Request) rest.RestResponse {
 }
 
 func (h *Handler) malicious(r *http.Request) rest.RestResponse {
-	remoteAddress, err := request.NewRemoteAddress(r.Header.Get(headerRemoteAddress))
-	if err != nil {
-		h.log.Error("could not create the remote address", "err", err, "header", headerRemoteAddress)
+	remoteAddress := r.Header.Get(headerRemoteAddress)
+	if remoteAddress == "" {
+		h.log.Error("the remote address header is empty", "header", headerRemoteAddress)
 		return rest.ErrBadRequest
 	}
 
@@ -87,7 +88,7 @@ func (h *Handler) malicious(r *http.Request) rest.RestResponse {
 	}
 
 	malicious, err := h.app.IsRequestMalicious.Execute(app.IsRequestMalicious{
-		RemoteAddress: remoteAddress,
+		RemoteAddress: request.NewRemoteAddress(remoteAddress),
 		Uri:           request.NewUri(uri),
 		UserAgent:     request.NewUserAgent(r.Header.Get(headerUserAgent)),
 	})
@@ -322,11 +323,20 @@ func getFilter(r *http.Request) (domain.Filter, error) {
 
 	return domain.Filter{
 		Category:  category,
-		Uri:       q.Get("uri"),
-		Status:    q.Get("status"),
-		Referer:   q.Get("referer"),
-		UserAgent: q.Get("userAgent"),
+		Uri:       getFilterValue(q, "uri", request.NewUri),
+		Status:    getFilterValue(q, "status", request.NewStatus),
+		Referer:   getFilterValue(q, "referer", request.NewReferer),
+		UserAgent: getFilterValue(q, "userAgent", request.NewUserAgent),
 	}, nil
+}
+
+func getFilterValue[T any](q url.Values, key string, newValue func(string) T) *T {
+	if !q.Has(key) {
+		return nil
+	}
+
+	value := newValue(q.Get(key))
+	return &value
 }
 
 func getCategory(s string) (domain.Category, error) {

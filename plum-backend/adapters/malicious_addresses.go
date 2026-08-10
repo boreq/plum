@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/boreq/plum/plum-backend/domain"
-	"github.com/boreq/plum/plum-backend/domain/parser"
+	"github.com/boreq/plum/plum-backend/domain/request"
 	"github.com/boreq/plum/plum-backend/logging"
 )
 
@@ -24,19 +24,19 @@ func NewMaliciousAddresses() *MaliciousAddresses {
 	}
 }
 
-func (m *MaliciousAddresses) Insert(entry *parser.Entry, category domain.Category) {
+func (m *MaliciousAddresses) Insert(req request.Request, category domain.Category) {
 	if category != domain.CategoryMalicious {
 		return
 	}
 
-	if entry.Time.Before(retentionCutoff(time.Now())) {
+	if req.Timestamp().Before(retentionCutoff(time.Now())) {
 		return
 	}
 
 	m.hitsMutex.Lock()
 	defer m.hitsMutex.Unlock()
 
-	key := m.createKey(entry.Time)
+	key := m.createKey(req.Timestamp())
 
 	dayHits, ok := m.hits[key]
 	if !ok {
@@ -44,10 +44,10 @@ func (m *MaliciousAddresses) Insert(entry *parser.Entry, category domain.Categor
 		m.hits[key] = dayHits
 	}
 
-	dayHits[entry.RemoteAddress]++
+	dayHits[req.RemoteAddress().String()]++
 }
 
-func (m *MaliciousAddresses) IsIpMalicious(t time.Time, remoteAddress string) bool {
+func (m *MaliciousAddresses) IsIpMalicious(t time.Time, remoteAddress request.RemoteAddress) bool {
 	m.hitsMutex.Lock()
 	defer m.hitsMutex.Unlock()
 
@@ -56,7 +56,7 @@ func (m *MaliciousAddresses) IsIpMalicious(t time.Time, remoteAddress string) bo
 	var hits int
 
 	for day := startOfDay(t.Add(-domain.TrafficWindow)); !day.After(to); day = day.AddDate(0, 0, 1) {
-		hits += m.hits[m.createKey(day)][remoteAddress]
+		hits += m.hits[m.createKey(day)][remoteAddress.String()]
 
 		if hits > domain.MaliciousRequestThreshold {
 			return true

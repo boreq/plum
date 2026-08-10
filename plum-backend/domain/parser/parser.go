@@ -9,9 +9,10 @@ import (
 
 	"github.com/boreq/errors"
 	"github.com/boreq/plum/plum-backend/domain/parser/format"
+	"github.com/boreq/plum/plum-backend/domain/request"
 )
 
-type Entry struct {
+type entry struct {
 	// Client address.
 	RemoteAddress string
 
@@ -49,7 +50,7 @@ var PredefinedFormats = map[string]string{
 // entry without modifying it. This should be an IP address of the client.
 //
 // Input example: "11.22.33.44"
-func parseRemoteAddr(entry *Entry, s string) error {
+func parseRemoteAddr(entry *entry, s string) error {
 	entry.RemoteAddress = s
 	return nil
 }
@@ -58,7 +59,7 @@ func parseRemoteAddr(entry *Entry, s string) error {
 // Format and stores it in the Time field of the entry.
 //
 // Input example: "03/Mar/2019:00:01:36 +0100"
-func parseTimeLocal(entry *Entry, s string) error {
+func parseTimeLocal(entry *entry, s string) error {
 	t, err := time.Parse("02/Jan/2006:15:04:05 -0700", s)
 	if err != nil {
 		return err
@@ -75,7 +76,7 @@ func parseTimeLocal(entry *Entry, s string) error {
 // https://www.w3.org/Protocols/rfc2616/rfc2616-sec5.html#sec5.1
 //
 // Input example: "GET / HTTP/2.0"
-func parseRequest(entry *Entry, s string) error {
+func parseRequest(entry *entry, s string) error {
 	spl := strings.SplitN(s, " ", 3)
 	if len(spl) != 3 {
 		return nil
@@ -90,7 +91,7 @@ func parseRequest(entry *Entry, s string) error {
 // without modifying it.
 //
 // Input example: "200"
-func parseStatus(entry *Entry, s string) error {
+func parseStatus(entry *entry, s string) error {
 	entry.Status = s
 	return nil
 }
@@ -100,7 +101,7 @@ func parseStatus(entry *Entry, s string) error {
 // of bytes transferred to the client.
 //
 // Input example: "123"
-func parseBodyBytesSent(entry *Entry, s string) error {
+func parseBodyBytesSent(entry *entry, s string) error {
 	n, err := strconv.Atoi(s)
 	if err != nil {
 		return err
@@ -115,7 +116,7 @@ func parseBodyBytesSent(entry *Entry, s string) error {
 // transferred without modification as well.
 //
 // Input example: "https://www.reddit.com/r/programming/comments/123456/some-title/"
-func parseHttpReferer(entry *Entry, s string) error {
+func parseHttpReferer(entry *entry, s string) error {
 	entry.Referer = s
 	return nil
 }
@@ -124,7 +125,7 @@ func parseHttpReferer(entry *Entry, s string) error {
 // entry without modifying it. This should be an HTTP User-Agent.
 //
 // Input example: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.119 Safari/537.36"
-func parseUserAgent(entry *Entry, s string) error {
+func parseUserAgent(entry *entry, s string) error {
 	entry.UserAgent = s
 	return nil
 }
@@ -132,11 +133,11 @@ func parseUserAgent(entry *Entry, s string) error {
 // doNothing is a placeholder which... does nothing. It can be used to consume
 // a part of the log without using it. This is useful if parsing a specific
 // value is not supported.
-func doNothing(entry *Entry, s string) error {
+func doNothing(entry *entry, s string) error {
 	return nil
 }
 
-type parseFn func(entry *Entry, s string) error
+type parseFn func(entry *entry, s string) error
 
 var parseFunctions = map[string]parseFn{
 	"remote_addr":     parseRemoteAddr,
@@ -198,13 +199,13 @@ func NewParser(frmt string) (*Parser, error) {
 }
 
 // Parse parses a line of the log file.
-func (p *Parser) Parse(line string) (*Entry, error) {
-	entry := &Entry{}
+func (p *Parser) Parse(line string) (request.Request, error) {
+	entry := &entry{}
 	for i := range p.formatItems {
 		// Line is now empty but we still have formatItems that want to
 		// consume some values
 		if line == "" {
-			return nil, errors.New("ran out of input")
+			return request.Request{}, errors.New("ran out of input")
 		}
 
 		item := p.formatItems[i]
@@ -213,7 +214,7 @@ func (p *Parser) Parse(line string) (*Entry, error) {
 		// If this is a text delimiter simply consume and discard it
 		case format.ItemText:
 			if !strings.HasPrefix(line, item.Value) {
-				return nil, fmt.Errorf("expected delimiter \"%s\" at the beginning of input \"%s\"", item.Value, line)
+				return request.Request{}, fmt.Errorf("expected delimiter \"%s\" at the beginning of input \"%s\"", item.Value, line)
 			}
 			line = strings.TrimPrefix(line, item.Value)
 
@@ -222,30 +223,46 @@ func (p *Parser) Parse(line string) (*Entry, error) {
 		case format.ItemElement:
 			parseFunction, ok := parseFunctions[item.Value]
 			if !ok {
-				return nil, fmt.Errorf("unknown parse function ${%s}", item.Value)
+				return request.Request{}, fmt.Errorf("unknown parse function ${%s}", item.Value)
 			}
 			if i+1 < len(p.formatItems) {
 				nextItem := p.formatItems[i+1]
 				if nextItem.Type != format.ItemText {
-					return nil, errors.New("expected a delimiter in the format")
+					return request.Request{}, errors.New("expected a delimiter in the format")
 				}
 				i := strings.Index(line, nextItem.Value)
 				if i < 0 {
-					return nil, errors.New("expected a delimiter in the input")
+					return request.Request{}, errors.New("expected a delimiter in the input")
 				}
 				err := parseFunction(entry, line[:i])
 				if err != nil {
-					return nil, errors.Wrapf(err, "error in ${%s}", item.Value)
+					return request.Request{}, errors.Wrapf(err, "error in ${%s}", item.Value)
 				}
 				line = line[i:]
 			} else {
 				err := parseFunction(entry, line)
 				if err != nil {
-					return nil, errors.Wrapf(err, "error in ${%s}", item.Value)
+					return request.Request{}, errors.Wrapf(err, "error in ${%s}", item.Value)
 				}
 				line = ""
 			}
 		}
 	}
-	return entry, nil
+
+	bodyBytesSent, err := request.NewBodyBytesSent(entry.BodyBytesSent)
+	if err != nil {
+		return request.Request{}, errors.Wrap(err, "could not create the body bytes sent")
+	}
+
+	return request.NewRequest(
+		request.NewRemoteAddress(entry.RemoteAddress),
+		entry.Time,
+		request.NewMethod(entry.HttpRequestMethod),
+		request.NewUri(entry.HttpRequestURI),
+		request.NewVersion(entry.HttpRequestVersion),
+		request.NewStatus(entry.Status),
+		bodyBytesSent,
+		request.NewReferer(entry.Referer),
+		request.NewUserAgent(entry.UserAgent),
+	), nil
 }

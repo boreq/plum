@@ -6,7 +6,6 @@ import (
 
 	"github.com/boreq/plum/plum-backend/config"
 	"github.com/boreq/plum/plum-backend/domain"
-	"github.com/boreq/plum/plum-backend/domain/parser"
 	"github.com/boreq/plum/plum-backend/domain/request"
 )
 
@@ -36,46 +35,57 @@ func newRepository(t *testing.T) *Repository {
 	return repository
 }
 
-func newTestEntry(t time.Time) *parser.Entry {
-	return &parser.Entry{
-		Time:           t,
-		RemoteAddress:  "127.0.0.1",
-		HttpRequestURI: "/",
-		Status:         "200",
+func newTestEntry(t time.Time) request.Request {
+	return newTestRequest("127.0.0.1", "", t, "/", "200", "", 0)
+}
+
+func testEntry(remoteAddress, uri, status, referer string, bytes int) request.Request {
+	return newTestRequest(remoteAddress, "user agent", entryTime, uri, status, referer, bytes)
+}
+
+func testEntryWithUserAgent(userAgent, remoteAddress, uri, status, referer string, bytes int) request.Request {
+	return newTestRequest(remoteAddress, userAgent, entryTime, uri, status, referer, bytes)
+}
+
+func newTestRequest(remoteAddress, userAgent string, t time.Time, uri, status, referer string, bytes int) request.Request {
+	return request.NewRequest(
+		request.NewRemoteAddress(remoteAddress),
+		t,
+		request.NewMethod("GET"),
+		request.NewUri(uri),
+		request.NewVersion("HTTP/1.1"),
+		request.NewStatus(status),
+		newTestBodyBytesSent(bytes),
+		request.NewReferer(referer),
+		request.NewUserAgent(userAgent),
+	)
+}
+
+func testFilterValue[T any](value T) *T {
+	return &value
+}
+
+func newTestBodyBytesSent(n int) request.BodyBytesSent {
+	bodyBytesSent, err := request.NewBodyBytesSent(n)
+	if err != nil {
+		panic(err)
 	}
+	return bodyBytesSent
 }
 
-func testEntry(remoteAddress, uri, status, referer string, bytes int) *parser.Entry {
-	return &parser.Entry{
-		RemoteAddress:  remoteAddress,
-		UserAgent:      "user agent",
-		Time:           entryTime,
-		HttpRequestURI: uri,
-		Status:         status,
-		Referer:        referer,
-		BodyBytesSent:  bytes,
-	}
-}
-
-func testEntryWithUserAgent(userAgent, remoteAddress, uri, status, referer string, bytes int) *parser.Entry {
-	entry := testEntry(remoteAddress, uri, status, referer, bytes)
-	entry.UserAgent = userAgent
-	return entry
-}
-
-func insert(t *testing.T, r *Repository, entry *parser.Entry) {
+func insert(t *testing.T, r *Repository, req request.Request) {
 	t.Helper()
 
-	category := testClassifier.Classify(request.NewUri(entry.HttpRequestURI), request.NewUserAgent(entry.UserAgent), entry.Time)
+	category := testClassifier.Classify(req.Uri(), req.UserAgent(), req.Timestamp())
 
-	r.maliciousAddresses.Insert(entry, category)
+	r.maliciousAddresses.Insert(req, category)
 
-	if err := r.Insert(entry, category); err != nil {
+	if err := r.Insert(req, category); err != nil {
 		t.Fatalf("insert: %v", err)
 	}
 }
 
-func testRepository(t *testing.T, entries ...*parser.Entry) *Repository {
+func testRepository(t *testing.T, entries ...request.Request) *Repository {
 	t.Helper()
 
 	r := newRepository(t)
@@ -133,8 +143,7 @@ func TestRetrieveMarksEarlierTrafficOfMaliciousAddresses(t *testing.T) {
 	now := time.Now().UTC()
 	day := now.Add(-24 * time.Hour)
 
-	entry := newTestEntry(day)
-	entry.UserAgent = classifierBrowserUserAgent
+	entry := newTestRequest("127.0.0.1", classifierBrowserUserAgent, day, "/", "200", "", 0)
 	insert(t, r, entry)
 
 	summary, _ := r.RetrieveDay(day.Year(), day.Month(), day.Day(), domain.Filter{})
@@ -143,10 +152,7 @@ func TestRetrieveMarksEarlierTrafficOfMaliciousAddresses(t *testing.T) {
 	}
 
 	for i := 0; i <= domain.MaliciousRequestThreshold; i++ {
-		scan := newTestEntry(now)
-		scan.RemoteAddress = entry.RemoteAddress
-		scan.UserAgent = classifierBrowserUserAgent
-		scan.HttpRequestURI = "/.env"
+		scan := newTestRequest(entry.RemoteAddress().String(), classifierBrowserUserAgent, now, "/.env", "200", "", 0)
 		insert(t, r, scan)
 	}
 
@@ -170,15 +176,11 @@ func TestRetrieveIgnoresMaliciousTrafficOutsideOfTheWindow(t *testing.T) {
 	now := time.Now().UTC()
 	day := now.Add(-domain.TrafficWindow).Add(-48 * time.Hour)
 
-	entry := newTestEntry(day)
-	entry.UserAgent = classifierBrowserUserAgent
+	entry := newTestRequest("127.0.0.1", classifierBrowserUserAgent, day, "/", "200", "", 0)
 	insert(t, r, entry)
 
 	for i := 0; i <= domain.MaliciousRequestThreshold; i++ {
-		scan := newTestEntry(now)
-		scan.RemoteAddress = entry.RemoteAddress
-		scan.UserAgent = classifierBrowserUserAgent
-		scan.HttpRequestURI = "/.env"
+		scan := newTestRequest(entry.RemoteAddress().String(), classifierBrowserUserAgent, now, "/.env", "200", "", 0)
 		insert(t, r, scan)
 	}
 
@@ -217,7 +219,7 @@ func TestRetrieveFilter(t *testing.T) {
 		},
 		{
 			Name:          "uri",
-			Filter:        domain.Filter{Uri: "/a"},
+			Filter:        domain.Filter{Uri: testFilterValue(request.NewUri("/a"))},
 			Hits:          2,
 			Visits:        2,
 			BodyBytesSent: 30,
@@ -225,7 +227,7 @@ func TestRetrieveFilter(t *testing.T) {
 		},
 		{
 			Name:          "status",
-			Filter:        domain.Filter{Status: "200"},
+			Filter:        domain.Filter{Status: testFilterValue(request.NewStatus("200"))},
 			Hits:          3,
 			Visits:        2,
 			BodyBytesSent: 130,
@@ -233,7 +235,7 @@ func TestRetrieveFilter(t *testing.T) {
 		},
 		{
 			Name:          "referer",
-			Filter:        domain.Filter{Referer: "example.com"},
+			Filter:        domain.Filter{Referer: testFilterValue(request.NewReferer("example.com"))},
 			Hits:          3,
 			Visits:        2,
 			BodyBytesSent: 110,
@@ -241,7 +243,7 @@ func TestRetrieveFilter(t *testing.T) {
 		},
 		{
 			Name:          "uri and status",
-			Filter:        domain.Filter{Uri: "/a", Status: "404"},
+			Filter:        domain.Filter{Uri: testFilterValue(request.NewUri("/a")), Status: testFilterValue(request.NewStatus("404"))},
 			Hits:          1,
 			Visits:        1,
 			BodyBytesSent: 20,
@@ -249,7 +251,7 @@ func TestRetrieveFilter(t *testing.T) {
 		},
 		{
 			Name:          "all dimensions",
-			Filter:        domain.Filter{Uri: "/b", Status: "200", Referer: "other.com"},
+			Filter:        domain.Filter{Uri: testFilterValue(request.NewUri("/b")), Status: testFilterValue(request.NewStatus("200")), Referer: testFilterValue(request.NewReferer("other.com"))},
 			Hits:          1,
 			Visits:        1,
 			BodyBytesSent: 40,
@@ -257,7 +259,7 @@ func TestRetrieveFilter(t *testing.T) {
 		},
 		{
 			Name:          "no match",
-			Filter:        domain.Filter{Uri: "/a", Referer: "other.com"},
+			Filter:        domain.Filter{Uri: testFilterValue(request.NewUri("/a")), Referer: testFilterValue(request.NewReferer("other.com"))},
 			Hits:          0,
 			Visits:        0,
 			BodyBytesSent: 0,
@@ -300,7 +302,7 @@ func TestRetrieveAggregatesFromLeaves(t *testing.T) {
 		testEntry("2.2.2.2", "/a", "200", "other.com", 20),
 	)
 
-	data := retrieve(t, r, domain.Filter{Referer: "example.com"})
+	data := retrieve(t, r, domain.Filter{Referer: testFilterValue(request.NewReferer("example.com"))})
 
 	uriMetrics, ok := data.Uris["/a"]
 	if !ok {
@@ -440,7 +442,7 @@ func TestRetrieveCategoryTotalsRespectOtherFilters(t *testing.T) {
 		testEntryWithUserAgent("curl/7.64.0", "3.3.3.3", "/a", "200", "example.com", 40),
 	)
 
-	data := retrieve(t, r, domain.Filter{Uri: "/b"})
+	data := retrieve(t, r, domain.Filter{Uri: testFilterValue(request.NewUri("/b"))})
 
 	if automated := data.Categories[domain.CategoryAutomated]; automated.Hits != 0 {
 		t.Errorf("automated hits: got %d, want 0", automated.Hits)

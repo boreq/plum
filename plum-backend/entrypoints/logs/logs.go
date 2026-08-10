@@ -56,13 +56,13 @@ func (l *Logs) Run() error {
 }
 
 func (l *Logs) Handle(line string) error {
-	entry, err := l.parser.Parse(line)
+	req, err := l.parser.Parse(line)
 	if err != nil {
 		return errors.Wrap(err, "could not parse a line")
 	}
 
 	return l.addRequest.Execute(app.AddRequest{
 		Website: l.website,
-		Entry:   entry,
+		Request: req,
 	})
 }

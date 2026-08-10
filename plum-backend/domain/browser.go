@@ -1,6 +1,10 @@
 package domain
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/boreq/plum/plum-backend/domain/request"
+)
 
 type Browser struct {
 	id   string
@@ -26,8 +30,8 @@ var browserMarkers = []struct {
 	{Marker: "safari", Browser: BrowserSafari},
 }
 
-func RecognizeBrowser(rawUserAgent string) *Browser {
-	raw := strings.ToLower(rawUserAgent)
+func RecognizeBrowser(userAgent request.UserAgent) *Browser {
+	raw := strings.ToLower(userAgent.String())
 
 	for _, marker := range browserMarkers {
 		if strings.Contains(raw, marker.Marker) {

@@ -5,17 +5,11 @@ import (
 	"time"
 
 	"github.com/boreq/plum/plum-backend/domain"
-	"github.com/boreq/plum/plum-backend/domain/parser"
+	"github.com/boreq/plum/plum-backend/domain/request"
 )
 
-func scan(t time.Time, remoteAddress string) *parser.Entry {
-	return &parser.Entry{
-		Time:           t,
-		RemoteAddress:  remoteAddress,
-		UserAgent:      classifierBrowserUserAgent,
-		HttpRequestURI: "/.env",
-		Status:         "404",
-	}
+func scan(t time.Time, remoteAddress string) request.Request {
+	return newTestRequest(remoteAddress, classifierBrowserUserAgent, t, "/.env", "404", "", 0)
 }
 
 func insertScans(m *MaliciousAddresses, t time.Time, remoteAddress string, requests int) {
@@ -30,11 +24,11 @@ func TestIsIpMaliciousMarksAddresses(t *testing.T) {
 	m := NewMaliciousAddresses()
 	insertScans(m, now, "1.1.1.1", domain.MaliciousRequestThreshold+1)
 
-	if !m.IsIpMalicious(now, "1.1.1.1") {
+	if !m.IsIpMalicious(now, request.NewRemoteAddress("1.1.1.1")) {
 		t.Error("the address should be malicious")
 	}
 
-	if m.IsIpMalicious(now, "2.2.2.2") {
+	if m.IsIpMalicious(now, request.NewRemoteAddress("2.2.2.2")) {
 		t.Error("the address should not be malicious")
 	}
 }
@@ -45,7 +39,7 @@ func TestIsIpMaliciousRequiresTheThreshold(t *testing.T) {
 	m := NewMaliciousAddresses()
 	insertScans(m, now, "1.1.1.1", domain.MaliciousRequestThreshold)
 
-	if m.IsIpMalicious(now, "1.1.1.1") {
+	if m.IsIpMalicious(now, request.NewRemoteAddress("1.1.1.1")) {
 		t.Error("the address should not be malicious")
 	}
 }
@@ -58,7 +52,7 @@ func TestIsIpMaliciousIgnoresOtherCategories(t *testing.T) {
 		m.Insert(scan(now, "1.1.1.1"), domain.CategoryUnclassified)
 	}
 
-	if m.IsIpMalicious(now, "1.1.1.1") {
+	if m.IsIpMalicious(now, request.NewRemoteAddress("1.1.1.1")) {
 		t.Error("the address should not be malicious")
 	}
 }
@@ -71,7 +65,7 @@ func TestIsIpMaliciousSumsDaysWithinTheWindow(t *testing.T) {
 		insertScans(m, now.AddDate(0, 0, -i), "1.1.1.1", 1)
 	}
 
-	if !m.IsIpMalicious(now, "1.1.1.1") {
+	if !m.IsIpMalicious(now, request.NewRemoteAddress("1.1.1.1")) {
 		t.Error("the address should be malicious")
 	}
 }
@@ -82,11 +76,11 @@ func TestIsIpMaliciousIgnoresTrafficOutsideOfTheWindow(t *testing.T) {
 	m := NewMaliciousAddresses()
 	insertScans(m, now, "1.1.1.1", domain.MaliciousRequestThreshold+1)
 
-	if m.IsIpMalicious(now.Add(-2*domain.TrafficWindow), "1.1.1.1") {
+	if m.IsIpMalicious(now.Add(-2*domain.TrafficWindow), request.NewRemoteAddress("1.1.1.1")) {
 		t.Error("the address should not be malicious")
 	}
 
-	if !m.IsIpMalicious(now.Add(-domain.TrafficWindow).AddDate(0, 0, 1), "1.1.1.1") {
+	if !m.IsIpMalicious(now.Add(-domain.TrafficWindow).AddDate(0, 0, 1), request.NewRemoteAddress("1.1.1.1")) {
 		t.Error("the address should be malicious")
 	}
 }

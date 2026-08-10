@@ -32,5 +32,5 @@ func (h *IsRequestMaliciousHandler) Execute(query IsRequestMalicious) (bool, err
 		return true, nil
 	}
 
-	return h.maliciousAddresses.IsIpMalicious(now, query.RemoteAddress.String()), nil
+	return h.maliciousAddresses.IsIpMalicious(now, query.RemoteAddress), nil
 }

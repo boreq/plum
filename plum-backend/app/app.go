@@ -5,7 +5,7 @@ import (
 
 	"github.com/boreq/errors"
 	"github.com/boreq/plum/plum-backend/domain"
-	"github.com/boreq/plum/plum-backend/domain/parser"
+	"github.com/boreq/plum/plum-backend/domain/request"
 )
 
 var (
@@ -14,7 +14,7 @@ var (
 )
 
 type Repository interface {
-	Insert(entry *parser.Entry, category domain.Category) error
+	Insert(req request.Request, category domain.Category) error
 	RetrieveHour(year int, month time.Month, day int, hour int, filter domain.Filter) (*domain.Summary, bool)
 	RetrieveDay(year int, month time.Month, day int, filter domain.Filter) (*domain.Summary, bool)
 	RetrieveMonth(year int, month time.Month, filter domain.Filter) (*domain.Summary, bool)
@@ -27,8 +27,8 @@ type Repositories interface {
 }
 
 type MaliciousAddresses interface {
-	Insert(entry *parser.Entry, category domain.Category)
-	IsIpMalicious(t time.Time, remoteAddress string) bool
+	Insert(req request.Request, category domain.Category)
+	IsIpMalicious(t time.Time, remoteAddress request.RemoteAddress) bool
 	RemoveOldData(now time.Time)
 }
 

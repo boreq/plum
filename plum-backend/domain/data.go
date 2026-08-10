@@ -4,7 +4,7 @@ import (
 	"crypto"
 	_ "crypto/sha512"
 
-	"github.com/boreq/plum/plum-backend/domain/parser"
+	"github.com/boreq/plum/plum-backend/domain/request"
 )
 
 func NewData() *Data {
@@ -17,15 +17,17 @@ type Data struct {
 	Categories map[Category]*CategoryData
 }
 
-func (d *Data) Insert(entry *parser.Entry, category Category) error {
+func (d *Data) Insert(r request.Request, category Category) error {
+	bodyBytesSent := r.BodyBytesSent().Int()
+
 	categoryData := d.getOrCreateCategoryData(category)
-	remoteAddressData := categoryData.getOrCreateRemoteAddressData(entry.RemoteAddress)
-	remoteAddressData.Insert(entry.BodyBytesSent)
-	uriData := remoteAddressData.getOrCreateUriData(entry.HttpRequestURI)
-	statusData := uriData.getOrCreateStatusData(entry.Status)
-	refererData := statusData.getOrCreateRefererData(entry.Referer)
-	userAgentData := refererData.getOrCreateUserAgentData(entry.UserAgent, category)
-	userAgentData.Insert(entry.BodyBytesSent)
+	remoteAddressData := categoryData.getOrCreateRemoteAddressData(r.RemoteAddress())
+	remoteAddressData.Insert(bodyBytesSent)
+	uriData := remoteAddressData.getOrCreateUriData(r.Uri())
+	statusData := uriData.getOrCreateStatusData(r.Status())
+	refererData := statusData.getOrCreateRefererData(r.Referer())
+	userAgentData := refererData.getOrCreateUserAgentData(r.UserAgent(), category)
+	userAgentData.Insert(bodyBytesSent)
 
 	return nil
 }
@@ -34,7 +36,7 @@ func (d *Data) getOrCreateCategoryData(category Category) *CategoryData {
 	categoryData, ok := d.Categories[category]
 	if !ok {
 		categoryData = &CategoryData{
-			RemoteAddresses: make(map[string]*RemoteAddressData),
+			RemoteAddresses: make(map[request.RemoteAddress]*RemoteAddressData),
 		}
 		d.Categories[category] = categoryData
 	}
@@ -42,14 +44,14 @@ func (d *Data) getOrCreateCategoryData(category Category) *CategoryData {
 }
 
 type CategoryData struct {
-	RemoteAddresses map[string]*RemoteAddressData
+	RemoteAddresses map[request.RemoteAddress]*RemoteAddressData
 }
 
-func (b *CategoryData) getOrCreateRemoteAddressData(remoteAddress string) *RemoteAddressData {
+func (b *CategoryData) getOrCreateRemoteAddressData(remoteAddress request.RemoteAddress) *RemoteAddressData {
 	remoteAddressData, ok := b.RemoteAddresses[remoteAddress]
 	if !ok {
 		remoteAddressData = &RemoteAddressData{
-			Uris: make(map[string]*UriData),
+			Uris: make(map[request.Uri]*UriData),
 		}
 		b.RemoteAddresses[remoteAddress] = remoteAddressData
 	}
@@ -61,14 +63,14 @@ func (b *CategoryData) getOrCreateRemoteAddressData(remoteAddress string) *Remot
 // it.
 type RemoteAddressData struct {
 	Counters
-	Uris map[string]*UriData
+	Uris map[request.Uri]*UriData
 }
 
-func (b *RemoteAddressData) getOrCreateUriData(uri string) *UriData {
+func (b *RemoteAddressData) getOrCreateUriData(uri request.Uri) *UriData {
 	uriData, ok := b.Uris[uri]
 	if !ok {
 		uriData = &UriData{
-			Statuses: make(map[string]*StatusData),
+			Statuses: make(map[request.Status]*StatusData),
 		}
 		b.Uris[uri] = uriData
 	}
@@ -76,14 +78,14 @@ func (b *RemoteAddressData) getOrCreateUriData(uri string) *UriData {
 }
 
 type UriData struct {
-	Statuses map[string]*StatusData
+	Statuses map[request.Status]*StatusData
 }
 
-func (b *UriData) getOrCreateStatusData(status string) *StatusData {
+func (b *UriData) getOrCreateStatusData(status request.Status) *StatusData {
 	statusData, ok := b.Statuses[status]
 	if !ok {
 		statusData = &StatusData{
-			Referers: make(map[string]*RefererData),
+			Referers: make(map[request.Referer]*RefererData),
 		}
 		b.Statuses[status] = statusData
 	}
@@ -91,14 +93,14 @@ func (b *UriData) getOrCreateStatusData(status string) *StatusData {
 }
 
 type StatusData struct {
-	Referers map[string]*RefererData
+	Referers map[request.Referer]*RefererData
 }
 
-func (b *StatusData) getOrCreateRefererData(referer string) *RefererData {
+func (b *StatusData) getOrCreateRefererData(referer request.Referer) *RefererData {
 	refererData, ok := b.Referers[referer]
 	if !ok {
 		refererData = &RefererData{
-			UserAgents: make(map[string]*UserAgentData),
+			UserAgents: make(map[request.UserAgent]*UserAgentData),
 		}
 		b.Referers[referer] = refererData
 	}
@@ -106,10 +108,10 @@ func (b *StatusData) getOrCreateRefererData(referer string) *RefererData {
 }
 
 type RefererData struct {
-	UserAgents map[string]*UserAgentData
+	UserAgents map[request.UserAgent]*UserAgentData
 }
 
-func (b *RefererData) getOrCreateUserAgentData(userAgent string, category Category) *UserAgentData {
+func (b *RefererData) getOrCreateUserAgentData(userAgent request.UserAgent, category Category) *UserAgentData {
 	userAgentData, ok := b.UserAgents[userAgent]
 	if !ok {
 		var browser *Browser
@@ -134,11 +136,11 @@ var visitHash = crypto.SHA512_256
 
 const retainHashBytes = 8
 
-func CreateVisitHash(visitPrefix, remoteAddress, userAgent string) string {
+func CreateVisitHash(visitPrefix string, remoteAddress request.RemoteAddress, userAgent request.UserAgent) string {
 	h := visitHash.New()
 	h.Write([]byte(visitPrefix))
-	h.Write([]byte(remoteAddress))
-	h.Write([]byte(userAgent))
+	h.Write([]byte(remoteAddress.String()))
+	h.Write([]byte(userAgent.String()))
 	sum := h.Sum(nil)
 	return string(sum)[:retainHashBytes]
 }

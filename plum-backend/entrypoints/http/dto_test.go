@@ -10,7 +10,6 @@ import (
 	"github.com/boreq/plum/plum-backend/app"
 	"github.com/boreq/plum/plum-backend/config"
 	"github.com/boreq/plum/plum-backend/domain"
-	"github.com/boreq/plum/plum-backend/domain/parser"
 	"github.com/boreq/plum/plum-backend/domain/request"
 )
 
@@ -29,31 +28,15 @@ func TestNewRangeResultJSON(t *testing.T) {
 		t.Fatalf("add: %v", err)
 	}
 
-	entries := []*parser.Entry{
-		{
-			RemoteAddress:  "1.2.3.4",
-			UserAgent:      "User Agent",
-			Time:           rangeEntryTime,
-			HttpRequestURI: "/index.html",
-			Status:         "200",
-			BodyBytesSent:  100,
-			Referer:        "example.com",
-		},
-		{
-			RemoteAddress:  "1.2.3.4",
-			UserAgent:      "User Agent",
-			Time:           rangeEntryTime.Add(time.Hour),
-			HttpRequestURI: "/other.html",
-			Status:         "404",
-			BodyBytesSent:  50,
-			Referer:        "example.com",
-		},
+	entries := []request.Request{
+		newTestRequest(rangeEntryTime, "/index.html", "200", 100),
+		newTestRequest(rangeEntryTime.Add(time.Hour), "/other.html", "404", 50),
 	}
 
 	classifier := domain.NewTrafficClassifier()
 
 	for _, entry := range entries {
-		if err := repository.Insert(entry, classifier.Classify(request.NewUri(entry.HttpRequestURI), request.NewUserAgent(entry.UserAgent), entry.Time)); err != nil {
+		if err := repository.Insert(entry, classifier.Classify(entry.Uri(), entry.UserAgent(), entry.Timestamp())); err != nil {
 			t.Fatalf("insert: %v", err)
 		}
 	}
@@ -82,4 +65,23 @@ func TestNewRangeResultJSON(t *testing.T) {
 	if string(j) != expected {
 		t.Fatalf("\n got: %s\nwant: %s", string(j), expected)
 	}
+}
+
+func newTestRequest(t time.Time, uri, status string, bytes int) request.Request {
+	bodyBytesSent, err := request.NewBodyBytesSent(bytes)
+	if err != nil {
+		panic(err)
+	}
+
+	return request.NewRequest(
+		request.NewRemoteAddress("1.2.3.4"),
+		t,
+		request.NewMethod("GET"),
+		request.NewUri(uri),
+		request.NewVersion("HTTP/1.1"),
+		request.NewStatus(status),
+		bodyBytesSent,
+		request.NewReferer("example.com"),
+		request.NewUserAgent("User Agent"),
+	)
 }

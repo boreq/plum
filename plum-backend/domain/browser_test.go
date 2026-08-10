@@ -1,6 +1,10 @@
 package domain
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/boreq/plum/plum-backend/domain/request"
+)
 
 func TestRecognizeBrowser(t *testing.T) {
 	testCases := []struct {
@@ -112,7 +116,7 @@ func TestRecognizeBrowser(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(t *testing.T) {
-			if browser := RecognizeBrowser(testCase.UserAgent); browser != testCase.Browser {
+			if browser := RecognizeBrowser(request.NewUserAgent(testCase.UserAgent)); browser != testCase.Browser {
 				t.Errorf("got %v, want %v", browser, testCase.Browser)
 			}
 		})
