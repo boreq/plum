@@ -7,7 +7,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/boreq/plum/plum-backend/domain/parser"
+	"github.com/boreq/plum/plum-backend/domain/request"
 	"github.com/boreq/plum/plum-backend/logging"
 )
 
@@ -270,10 +270,10 @@ func NewTrafficClassifier() *TrafficClassifier {
 	}
 }
 
-func (c *TrafficClassifier) Classify(entry *parser.Entry) Category {
-	category := c.classifyUserAgent(entry.UserAgent, entry.Time)
+func (c *TrafficClassifier) Classify(uri request.Uri, userAgent request.UserAgent, t time.Time) Category {
+	category := c.classifyUserAgent(userAgent.String(), t)
 
-	if c.isScanRequest(entry.HttpRequestURI) {
+	if c.isScanRequest(uri.String()) {
 		category = CategoryMalicious
 	}
 

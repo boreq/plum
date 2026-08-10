@@ -5,6 +5,7 @@ import (
 
 	"github.com/boreq/plum/plum-backend/app"
 	"github.com/boreq/plum/plum-backend/domain"
+	"github.com/boreq/rest"
 )
 
 type RangeResult struct {
@@ -35,6 +36,23 @@ type Metrics struct {
 	Visits        int `json:"visits"`
 	Hits          int `json:"hits"`
 	BodyBytesSent int `json:"bytes"`
+}
+
+type Malicious struct {
+	Malicious bool `json:"malicious"`
+}
+
+func maliciousResponse(malicious bool) rest.Response {
+	return rest.
+		NewResponse(Malicious{Malicious: malicious}).
+		WithHeader(headerMalicious, maliciousHeaderValue(malicious))
+}
+
+func maliciousHeaderValue(malicious bool) string {
+	if malicious {
+		return "1"
+	}
+	return "0"
 }
 
 func newWebsites(websites []domain.WebsiteName) []string {

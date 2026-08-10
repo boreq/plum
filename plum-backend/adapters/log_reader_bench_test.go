@@ -11,6 +11,7 @@ import (
 	"github.com/boreq/plum/plum-backend/config"
 	"github.com/boreq/plum/plum-backend/domain"
 	"github.com/boreq/plum/plum-backend/domain/parser"
+	"github.com/boreq/plum/plum-backend/domain/request"
 )
 
 var benchmarkLogPath = flag.String("benchmark-log", "", "path to an access log in the combined format which the benchmarks are run against")
@@ -28,7 +29,7 @@ func (h insertingHandler) Handle(line string) error {
 	if err != nil {
 		return err
 	}
-	return h.repository.Insert(entry, h.classifier.Classify(entry))
+	return h.repository.Insert(entry, h.classifier.Classify(request.NewUri(entry.HttpRequestURI), request.NewUserAgent(entry.UserAgent), entry.Time))
 }
 
 func BenchmarkLoadOldEntries(b *testing.B) {

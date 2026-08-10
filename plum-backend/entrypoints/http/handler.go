@@ -9,15 +9,25 @@ import (
 	"github.com/boreq/errors"
 	"github.com/boreq/plum/plum-backend/app"
 	"github.com/boreq/plum/plum-backend/domain"
+	"github.com/boreq/plum/plum-backend/domain/request"
 	_ "github.com/boreq/plum/plum-backend/entrypoints/http/statik"
+	"github.com/boreq/plum/plum-backend/logging"
 	"github.com/boreq/rest"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rakyll/statik/fs"
 )
 
+const (
+	headerRemoteAddress = "X-Plum-Remote-Address"
+	headerUri           = "X-Plum-Uri"
+	headerUserAgent     = "X-Plum-User-Agent"
+	headerMalicious     = "X-Plum-Malicious"
+)
+
 type Handler struct {
 	app    *app.Application
 	router *httprouter.Router
+	log    logging.Logger
 }
 
 func NewHandler(app *app.Application) (*Handler, error) {
@@ -29,10 +39,11 @@ func NewHandler(app *app.Application) (*Handler, error) {
 	h := &Handler{
 		app:    app,
 		router: httprouter.New(),
+		log:    logging.New("entrypoints/http.Handler"),
 	}
 
-	// List websites
 	h.router.HandlerFunc(http.MethodGet, "/api/websites", rest.Wrap(h.websites))
+	h.router.HandlerFunc(http.MethodGet, "/api/malicious", rest.Wrap(h.malicious))
 
 	// Discrete endpoints
 	h.router.HandlerFunc(http.MethodGet, "/api/websites/:name/hour/:year/:month/:day/:hour", rest.Wrap(h.hour))
@@ -60,6 +71,32 @@ func (h *Handler) websites(r *http.Request) rest.RestResponse {
 		return mapError(err)
 	}
 	return rest.NewResponse(newWebsites(websites))
+}
+
+func (h *Handler) malicious(r *http.Request) rest.RestResponse {
+	remoteAddress, err := request.NewRemoteAddress(r.Header.Get(headerRemoteAddress))
+	if err != nil {
+		h.log.Error("could not create the remote address", "err", err, "header", headerRemoteAddress)
+		return rest.ErrBadRequest
+	}
+
+	uri := r.Header.Get(headerUri)
+	if uri == "" {
+		h.log.Error("the uri header is empty", "header", headerUri)
+		return rest.ErrBadRequest
+	}
+
+	malicious, err := h.app.IsRequestMalicious.Execute(app.IsRequestMalicious{
+		RemoteAddress: remoteAddress,
+		Uri:           request.NewUri(uri),
+		UserAgent:     request.NewUserAgent(r.Header.Get(headerUserAgent)),
+	})
+	if err != nil {
+		h.log.Error("could not check if the request is malicious", "err", err)
+		return mapError(err)
+	}
+
+	return maliciousResponse(malicious)
 }
 
 func (h *Handler) hour(r *http.Request) rest.RestResponse {

@@ -7,6 +7,7 @@ import (
 	"github.com/boreq/plum/plum-backend/config"
 	"github.com/boreq/plum/plum-backend/domain"
 	"github.com/boreq/plum/plum-backend/domain/parser"
+	"github.com/boreq/plum/plum-backend/domain/request"
 )
 
 const classifierBrowserUserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36"
@@ -65,7 +66,7 @@ func testEntryWithUserAgent(userAgent, remoteAddress, uri, status, referer strin
 func insert(t *testing.T, r *Repository, entry *parser.Entry) {
 	t.Helper()
 
-	category := testClassifier.Classify(entry)
+	category := testClassifier.Classify(request.NewUri(entry.HttpRequestURI), request.NewUserAgent(entry.UserAgent), entry.Time)
 
 	r.maliciousAddresses.Insert(entry, category)
 

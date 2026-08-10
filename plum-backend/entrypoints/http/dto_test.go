@@ -11,6 +11,7 @@ import (
 	"github.com/boreq/plum/plum-backend/config"
 	"github.com/boreq/plum/plum-backend/domain"
 	"github.com/boreq/plum/plum-backend/domain/parser"
+	"github.com/boreq/plum/plum-backend/domain/request"
 )
 
 var rangeEntryTime = time.Now().UTC().Truncate(24 * time.Hour).Add(-12 * time.Hour)
@@ -52,7 +53,7 @@ func TestNewRangeResultJSON(t *testing.T) {
 	classifier := domain.NewTrafficClassifier()
 
 	for _, entry := range entries {
-		if err := repository.Insert(entry, classifier.Classify(entry)); err != nil {
+		if err := repository.Insert(entry, classifier.Classify(request.NewUri(entry.HttpRequestURI), request.NewUserAgent(entry.UserAgent), entry.Time)); err != nil {
 			t.Fatalf("insert: %v", err)
 		}
 	}

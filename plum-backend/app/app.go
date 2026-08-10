@@ -28,32 +28,37 @@ type Repositories interface {
 
 type MaliciousAddresses interface {
 	Insert(entry *parser.Entry, category domain.Category)
+	IsIpMalicious(t time.Time, remoteAddress string) bool
 	RemoveOldData(now time.Time)
 }
 
 type Application struct {
-	GetWebsites     *GetWebsitesHandler
-	GetHour         *GetHourHandler
-	GetDay          *GetDayHandler
-	GetMonth        *GetMonthHandler
-	GetRangeHourly  *GetRangeHourlyHandler
-	GetRangeDaily   *GetRangeDailyHandler
-	GetRangeMonthly *GetRangeMonthlyHandler
-	RemoveOldData   *RemoveOldDataHandler
-	AddRequest      *AddRequestHandler
+	GetWebsites        *GetWebsitesHandler
+	GetHour            *GetHourHandler
+	GetDay             *GetDayHandler
+	GetMonth           *GetMonthHandler
+	GetRangeHourly     *GetRangeHourlyHandler
+	GetRangeDaily      *GetRangeDailyHandler
+	GetRangeMonthly    *GetRangeMonthlyHandler
+	RemoveOldData      *RemoveOldDataHandler
+	AddRequest         *AddRequestHandler
+	IsRequestMalicious *IsRequestMaliciousHandler
 }
 
 func New(repositories Repositories, maliciousAddresses MaliciousAddresses) *Application {
+	classifier := domain.NewTrafficClassifier()
+
 	return &Application{
-		GetWebsites:     NewGetWebsitesHandler(repositories),
-		GetHour:         NewGetHourHandler(repositories),
-		GetDay:          NewGetDayHandler(repositories),
-		GetMonth:        NewGetMonthHandler(repositories),
-		GetRangeHourly:  NewGetRangeHourlyHandler(repositories),
-		GetRangeDaily:   NewGetRangeDailyHandler(repositories),
-		GetRangeMonthly: NewGetRangeMonthlyHandler(repositories),
-		RemoveOldData:   NewRemoveOldDataHandler(repositories, maliciousAddresses),
-		AddRequest:      NewAddRequestHandler(repositories, maliciousAddresses, domain.NewTrafficClassifier()),
+		GetWebsites:        NewGetWebsitesHandler(repositories),
+		GetHour:            NewGetHourHandler(repositories),
+		GetDay:             NewGetDayHandler(repositories),
+		GetMonth:           NewGetMonthHandler(repositories),
+		GetRangeHourly:     NewGetRangeHourlyHandler(repositories),
+		GetRangeDaily:      NewGetRangeDailyHandler(repositories),
+		GetRangeMonthly:    NewGetRangeMonthlyHandler(repositories),
+		RemoveOldData:      NewRemoveOldDataHandler(repositories, maliciousAddresses),
+		AddRequest:         NewAddRequestHandler(repositories, maliciousAddresses, classifier),
+		IsRequestMalicious: NewIsRequestMaliciousHandler(maliciousAddresses, classifier),
 	}
 }
 

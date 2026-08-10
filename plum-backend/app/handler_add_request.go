@@ -3,6 +3,7 @@ package app
 import (
 	"github.com/boreq/plum/plum-backend/domain"
 	"github.com/boreq/plum/plum-backend/domain/parser"
+	"github.com/boreq/plum/plum-backend/domain/request"
 )
 
 type AddRequest struct {
@@ -30,7 +31,11 @@ func (h *AddRequestHandler) Execute(cmd AddRequest) error {
 		return ErrWebsiteNotFound
 	}
 
-	category := h.classifier.Classify(cmd.Entry)
+	category := h.classifier.Classify(
+		request.NewUri(cmd.Entry.HttpRequestURI),
+		request.NewUserAgent(cmd.Entry.UserAgent),
+		cmd.Entry.Time,
+	)
 
 	h.maliciousAddresses.Insert(cmd.Entry, category)
 

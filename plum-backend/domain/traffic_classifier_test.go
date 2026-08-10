@@ -4,27 +4,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boreq/plum/plum-backend/domain/parser"
+	"github.com/boreq/plum/plum-backend/domain/request"
 )
 
-func classifierEntry(remoteAddress, userAgent, uri string, t time.Time) *parser.Entry {
-	return &parser.Entry{
-		RemoteAddress:  remoteAddress,
-		UserAgent:      userAgent,
-		HttpRequestURI: uri,
-		Time:           t,
-	}
+func classify(c *TrafficClassifier, userAgent, uri string, t time.Time) Category {
+	return c.Classify(request.NewUri(uri), request.NewUserAgent(userAgent), t)
 }
 
 func TestClassifyUsesTheUserAgent(t *testing.T) {
 	c := NewTrafficClassifier()
 	now := time.Now().UTC()
 
-	if category := c.Classify(classifierEntry("1.1.1.1", "curl/7.64.0", "/", now)); category != CategoryAutomated {
+	if category := classify(c, "curl/7.64.0", "/", now); category != CategoryAutomated {
 		t.Errorf("got %q, want %q", category, CategoryAutomated)
 	}
 
-	if category := c.Classify(classifierEntry("2.2.2.2", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "/", now)); category != CategoryUnclassified {
+	if category := classify(c, "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", "/", now); category != CategoryUnclassified {
 		t.Errorf("got %q, want %q", category, CategoryUnclassified)
 	}
 }
@@ -44,7 +39,7 @@ func TestClassifyDetectsScans(t *testing.T) {
 		t.Run(testCase.Uri, func(t *testing.T) {
 			c := NewTrafficClassifier()
 
-			category := c.Classify(classifierEntry("1.1.1.1", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", testCase.Uri, time.Now().UTC()))
+			category := classify(c, "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36", testCase.Uri, time.Now().UTC())
 			if category != testCase.Category {
 				t.Errorf("got %q, want %q", category, testCase.Category)
 			}
@@ -300,10 +295,10 @@ func TestClassifyDoesNotMarkMaliciousAddresses(t *testing.T) {
 	now := time.Now().UTC()
 
 	for i := 0; i <= MaliciousRequestThreshold; i++ {
-		c.Classify(classifierEntry("1.1.1.1", classifierBrowserUserAgent, "/.env", now))
+		classify(c, classifierBrowserUserAgent, "/.env", now)
 	}
 
-	if category := c.Classify(classifierEntry("1.1.1.1", classifierBrowserUserAgent, "/", now)); category != CategoryUnclassified {
+	if category := classify(c, classifierBrowserUserAgent, "/", now); category != CategoryUnclassified {
 		t.Errorf("got %q, want %q", category, CategoryUnclassified)
 	}
 }
