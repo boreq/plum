@@ -113,3 +113,41 @@ func TestMaliciousAddressesRemoveOldData(t *testing.T) {
 		t.Fatalf("error: %v", m.hits)
 	}
 }
+
+func TestIsIpMaliciousSkipsWhitelistedAddresses(t *testing.T) {
+	now := time.Now().UTC()
+
+	whitelist, err := domain.NewWhitelist([]string{"1.1.1.1"})
+	if err != nil {
+		t.Fatalf("could not create the whitelist: %s", err)
+	}
+
+	m := NewMaliciousAddresses(whitelist)
+	insertScans(m, now, "1.1.1.1", domain.MaliciousRequestThreshold+1)
+	insertScans(m, now, "2.2.2.2", domain.MaliciousRequestThreshold+1)
+
+	if m.IsIpMalicious(now, request.NewRemoteAddress("1.1.1.1")) {
+		t.Error("the whitelisted address should not be malicious")
+	}
+
+	if !m.IsIpMalicious(now, request.NewRemoteAddress("2.2.2.2")) {
+		t.Error("the other address should be malicious")
+	}
+}
+
+func TestWhitelistedAddressesAreStillCounted(t *testing.T) {
+	now := time.Now().UTC()
+
+	whitelist, err := domain.NewWhitelist([]string{"1.1.1.1"})
+	if err != nil {
+		t.Fatalf("could not create the whitelist: %s", err)
+	}
+
+	m := NewMaliciousAddresses(whitelist)
+	insertScans(m, now, "1.1.1.1", domain.MaliciousRequestThreshold+1)
+
+	hits := m.hits[m.createKey(now)]["1.1.1.1"]
+	if hits != domain.MaliciousRequestThreshold+1 {
+		t.Errorf("expected %d hits, got %d", domain.MaliciousRequestThreshold+1, hits)
+	}
+}

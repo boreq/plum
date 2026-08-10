@@ -52,7 +52,7 @@ func runRun(c guinea.Context) error {
 
 	go logMemoryStats()
 
-	application := app.New(repositories, maliciousAddresses, whitelist)
+	application := app.New(repositories, maliciousAddresses)
 
 	for i := range conf.Websites {
 		website := conf.Websites[i]

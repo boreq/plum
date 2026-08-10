@@ -13,7 +13,8 @@ type Config struct {
 	// Groups of logs which will be monitored.
 	Websites []Website `json:"websites"`
 
-	// Addresses which are never considered malicious eg. "1.2.3.4".
+	// Addresses which are never considered malicious because of their past
+	// traffic eg. "1.2.3.4". Their requests are still classified and counted.
 	Whitelist []string `json:"whitelist"`
 }
 

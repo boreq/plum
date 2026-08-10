@@ -31,10 +31,6 @@ func (m *MaliciousAddresses) Insert(req request.Request, category domain.Categor
 		return
 	}
 
-	if m.whitelist.Contains(req.RemoteAddress()) {
-		return
-	}
-
 	if req.Timestamp().Before(retentionCutoff(time.Now())) {
 		return
 	}
