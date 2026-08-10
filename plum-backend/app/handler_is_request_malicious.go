@@ -16,17 +16,23 @@ type IsRequestMalicious struct {
 type IsRequestMaliciousHandler struct {
 	maliciousAddresses MaliciousAddresses
 	classifier         *domain.TrafficClassifier
+	whitelist          domain.Whitelist
 }
 
-func NewIsRequestMaliciousHandler(maliciousAddresses MaliciousAddresses, classifier *domain.TrafficClassifier) *IsRequestMaliciousHandler {
+func NewIsRequestMaliciousHandler(maliciousAddresses MaliciousAddresses, classifier *domain.TrafficClassifier, whitelist domain.Whitelist) *IsRequestMaliciousHandler {
 	return &IsRequestMaliciousHandler{
 		maliciousAddresses: maliciousAddresses,
 		classifier:         classifier,
+		whitelist:          whitelist,
 	}
 }
 
 func (h *IsRequestMaliciousHandler) Execute(query IsRequestMalicious) (bool, error) {
 	now := time.Now()
+
+	if h.whitelist.Contains(query.RemoteAddress) {
+		return false, nil
+	}
 
 	if h.classifier.Classify(query.Uri, query.UserAgent, now) == domain.CategoryMalicious {
 		return true, nil

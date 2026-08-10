@@ -27,7 +27,7 @@ func newRepository(t *testing.T) *Repository {
 		t.Fatalf("website name: %v", err)
 	}
 
-	repository := NewRepository(config.Website{}, NewMaliciousAddresses())
+	repository := NewRepository(config.Website{}, NewMaliciousAddresses(domain.Whitelist{}))
 	if err := repositories.Add(name, repository); err != nil {
 		t.Fatalf("add: %v", err)
 	}

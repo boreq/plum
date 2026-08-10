@@ -14,18 +14,24 @@ const maliciousAddressesKeyFormat = "2006-01-02"
 type MaliciousAddresses struct {
 	hits      map[string]map[string]int
 	hitsMutex sync.Mutex
+	whitelist domain.Whitelist
 	log       logging.Logger
 }
 
-func NewMaliciousAddresses() *MaliciousAddresses {
+func NewMaliciousAddresses(whitelist domain.Whitelist) *MaliciousAddresses {
 	return &MaliciousAddresses{
-		hits: make(map[string]map[string]int),
-		log:  logging.New("malicious_addresses"),
+		hits:      make(map[string]map[string]int),
+		whitelist: whitelist,
+		log:       logging.New("malicious_addresses"),
 	}
 }
 
 func (m *MaliciousAddresses) Insert(req request.Request, category domain.Category) {
 	if category != domain.CategoryMalicious {
+		return
+	}
+
+	if m.whitelist.Contains(req.RemoteAddress()) {
 		return
 	}
 
@@ -48,6 +54,10 @@ func (m *MaliciousAddresses) Insert(req request.Request, category domain.Categor
 }
 
 func (m *MaliciousAddresses) IsIpMalicious(t time.Time, remoteAddress request.RemoteAddress) bool {
+	if m.whitelist.Contains(remoteAddress) {
+		return false
+	}
+
 	m.hitsMutex.Lock()
 	defer m.hitsMutex.Unlock()
 

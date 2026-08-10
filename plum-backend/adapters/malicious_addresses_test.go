@@ -21,7 +21,7 @@ func insertScans(m *MaliciousAddresses, t time.Time, remoteAddress string, reque
 func TestIsIpMaliciousMarksAddresses(t *testing.T) {
 	now := time.Now().UTC()
 
-	m := NewMaliciousAddresses()
+	m := NewMaliciousAddresses(domain.Whitelist{})
 	insertScans(m, now, "1.1.1.1", domain.MaliciousRequestThreshold+1)
 
 	if !m.IsIpMalicious(now, request.NewRemoteAddress("1.1.1.1")) {
@@ -36,7 +36,7 @@ func TestIsIpMaliciousMarksAddresses(t *testing.T) {
 func TestIsIpMaliciousRequiresTheThreshold(t *testing.T) {
 	now := time.Now().UTC()
 
-	m := NewMaliciousAddresses()
+	m := NewMaliciousAddresses(domain.Whitelist{})
 	insertScans(m, now, "1.1.1.1", domain.MaliciousRequestThreshold)
 
 	if m.IsIpMalicious(now, request.NewRemoteAddress("1.1.1.1")) {
@@ -47,7 +47,7 @@ func TestIsIpMaliciousRequiresTheThreshold(t *testing.T) {
 func TestIsIpMaliciousIgnoresOtherCategories(t *testing.T) {
 	now := time.Now().UTC()
 
-	m := NewMaliciousAddresses()
+	m := NewMaliciousAddresses(domain.Whitelist{})
 	for i := 0; i <= domain.MaliciousRequestThreshold; i++ {
 		m.Insert(scan(now, "1.1.1.1"), domain.CategoryUnclassified)
 	}
@@ -60,7 +60,7 @@ func TestIsIpMaliciousIgnoresOtherCategories(t *testing.T) {
 func TestIsIpMaliciousSumsDaysWithinTheWindow(t *testing.T) {
 	now := time.Now().UTC()
 
-	m := NewMaliciousAddresses()
+	m := NewMaliciousAddresses(domain.Whitelist{})
 	for i := 0; i <= domain.MaliciousRequestThreshold; i++ {
 		insertScans(m, now.AddDate(0, 0, -i), "1.1.1.1", 1)
 	}
@@ -73,7 +73,7 @@ func TestIsIpMaliciousSumsDaysWithinTheWindow(t *testing.T) {
 func TestIsIpMaliciousIgnoresTrafficOutsideOfTheWindow(t *testing.T) {
 	now := time.Now().UTC()
 
-	m := NewMaliciousAddresses()
+	m := NewMaliciousAddresses(domain.Whitelist{})
 	insertScans(m, now, "1.1.1.1", domain.MaliciousRequestThreshold+1)
 
 	if m.IsIpMalicious(now.Add(-2*domain.TrafficWindow), request.NewRemoteAddress("1.1.1.1")) {
@@ -89,7 +89,7 @@ func TestInsertIgnoresOldScans(t *testing.T) {
 	now := time.Now().UTC()
 	old := now.Add(-RetentionPeriod).Add(-time.Hour)
 
-	m := NewMaliciousAddresses()
+	m := NewMaliciousAddresses(domain.Whitelist{})
 	insertScans(m, old, "1.1.1.1", domain.MaliciousRequestThreshold+1)
 
 	if len(m.hits) != 0 {
@@ -100,7 +100,7 @@ func TestInsertIgnoresOldScans(t *testing.T) {
 func TestMaliciousAddressesRemoveOldData(t *testing.T) {
 	now := time.Now().UTC()
 
-	m := NewMaliciousAddresses()
+	m := NewMaliciousAddresses(domain.Whitelist{})
 	insertScans(m, now, "1.1.1.1", domain.MaliciousRequestThreshold+1)
 
 	m.RemoveOldData(now)

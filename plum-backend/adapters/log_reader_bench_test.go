@@ -52,7 +52,7 @@ func benchmarkLoad(b *testing.B, fromEnd bool) {
 	for i := 0; i < b.N; i++ {
 		handler := insertingHandler{
 			parser:     p,
-			repository: adapters.NewRepository(config.Website{}, adapters.NewMaliciousAddresses()),
+			repository: adapters.NewRepository(config.Website{}, adapters.NewMaliciousAddresses(domain.Whitelist{})),
 			classifier: domain.NewTrafficClassifier(),
 		}
 

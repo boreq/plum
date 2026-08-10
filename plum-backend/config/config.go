@@ -1,7 +1,10 @@
 // Package config holds the configuration struct.
 package config
 
-import "github.com/boreq/errors"
+import (
+	"github.com/boreq/errors"
+	"github.com/boreq/plum/plum-backend/domain"
+)
 
 type Config struct {
 	// HTTP server address eg. "127.0.0.1:8118".
@@ -9,11 +12,18 @@ type Config struct {
 
 	// Groups of logs which will be monitored.
 	Websites []Website `json:"websites"`
+
+	// Addresses which are never considered malicious eg. "1.2.3.4".
+	Whitelist []string `json:"whitelist"`
 }
 
 func (c Config) Valid() error {
 	if len(c.Websites) == 0 {
 		return errors.New("no websites defined")
+	}
+
+	if _, err := domain.NewWhitelist(c.Whitelist); err != nil {
+		return errors.Wrap(err, "invalid whitelist")
 	}
 
 	for _, website := range c.Websites {

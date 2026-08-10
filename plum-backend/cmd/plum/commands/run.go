@@ -40,14 +40,19 @@ func runRun(c guinea.Context) error {
 		return errors.Wrap(err, "could not load the configuration")
 	}
 
+	whitelist, err := domain.NewWhitelist(conf.Whitelist)
+	if err != nil {
+		return errors.Wrap(err, "could not create the whitelist")
+	}
+
 	errC := make(chan error)
 
 	repositories := adapters.NewRepositories()
-	maliciousAddresses := adapters.NewMaliciousAddresses()
+	maliciousAddresses := adapters.NewMaliciousAddresses(whitelist)
 
 	go logMemoryStats()
 
-	application := app.New(repositories, maliciousAddresses)
+	application := app.New(repositories, maliciousAddresses, whitelist)
 
 	for i := range conf.Websites {
 		website := conf.Websites[i]

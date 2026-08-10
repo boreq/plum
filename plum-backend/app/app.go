@@ -45,7 +45,7 @@ type Application struct {
 	IsRequestMalicious *IsRequestMaliciousHandler
 }
 
-func New(repositories Repositories, maliciousAddresses MaliciousAddresses) *Application {
+func New(repositories Repositories, maliciousAddresses MaliciousAddresses, whitelist domain.Whitelist) *Application {
 	classifier := domain.NewTrafficClassifier()
 
 	return &Application{
@@ -58,7 +58,7 @@ func New(repositories Repositories, maliciousAddresses MaliciousAddresses) *Appl
 		GetRangeMonthly:    NewGetRangeMonthlyHandler(repositories),
 		RemoveOldData:      NewRemoveOldDataHandler(repositories, maliciousAddresses),
 		AddRequest:         NewAddRequestHandler(repositories, maliciousAddresses, classifier),
-		IsRequestMalicious: NewIsRequestMaliciousHandler(maliciousAddresses, classifier),
+		IsRequestMalicious: NewIsRequestMaliciousHandler(maliciousAddresses, classifier, whitelist),
 	}
 }
 
